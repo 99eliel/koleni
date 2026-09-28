@@ -14,11 +14,52 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/staff/$(request.auth.uid)).data;
     }
 
+    function hasLegacyAdminProfile() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    function legacyAdminData() {
+      return get(/databases/$(database)/documents/admins/$(request.auth.uid)).data;
+    }
+
+    function hasLegacyUserProfile() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/usuarios/$(request.auth.uid));
+    }
+
+    function legacyUserData() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data;
+    }
+
+    function legacyAdminIsValid() {
+      return hasLegacyAdminProfile()
+        && (
+          legacyAdminData().tipo == 'admin'
+          || legacyAdminData().role == 'admin'
+        )
+        && (
+          legacyAdminData().ativo == true
+          || legacyAdminData().active == true
+        );
+    }
+
+    function legacyUserIsAdmin() {
+      return hasLegacyUserProfile()
+        && (
+          legacyUserData().tipo == 'admin'
+          || legacyUserData().role == 'admin'
+        )
+        && (
+          legacyUserData().ativo == true
+          || legacyUserData().active == true
+        );
+    }
+
     function isLegacyAdmin() {
       return isSignedIn()
         && !hasStaffProfile()
-        && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
-        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'admin';
+        && (legacyAdminIsValid() || legacyUserIsAdmin());
     }
 
     function isActiveStaff() {
@@ -186,9 +227,12 @@ service cloud.firestore {
       allow delete: if isAdmin() && request.auth.uid != uid;
     }
 
-    // Compatibilidade de migração. Depois que todos os administradores
-    // estiverem em staff/{uid}, esta coleção pode ser removida.
     match /admins/{uid} {
+      allow read: if isSignedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    match /usuarios/{uid} {
       allow read: if isSignedIn() && request.auth.uid == uid;
       allow write: if false;
     }
