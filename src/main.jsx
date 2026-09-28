@@ -5,6 +5,7 @@ import App from './App';
 import './styles.css';
 import './martinpel-theme.css';
 import './production-features.css';
+import './koleni-overrides.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
