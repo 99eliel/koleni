@@ -1,0 +1,115 @@
+name: Importar base do sistema Koleni
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/import-koleni.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  importar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Koleni
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Clonar sistema base
+        run: |
+          git clone --depth 1 https://github.com/99eliel/cor.git /tmp/cor-base
+          rsync -a --exclude='.git' /tmp/cor-base/ ./
+
+      - name: Aplicar identidade Koleni e Firebase novo
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          import re
+
+          root = Path('.')
+          text_exts = {'.js','.jsx','.css','.html','.md','.json','.yml','.yaml','.txt'}
+
+          replacements = [
+              ('personalizamartinpel', 'upagro-caa98'),
+              ('Martinpel', 'Koleni'),
+              ('MartinPel', 'Koleni'),
+              ('MARTINPEL', 'KOLENI'),
+              ('martinpel', 'koleni'),
+              ('/cor/', '/koleni/'),
+          ]
+
+          for path in root.rglob('*'):
+              if not path.is_file() or '.git' in path.parts:
+                  continue
+              if path.suffix.lower() not in text_exts and path.name not in {'.firebaserc','.env.example','.gitignore'}:
+                  continue
+              try:
+                  text = path.read_text(encoding='utf-8')
+              except UnicodeDecodeError:
+                  continue
+              original = text
+              for old, new in replacements:
+                  text = text.replace(old, new)
+              if text != original:
+                  path.write_text(text, encoding='utf-8')
+
+          firebase = Path('src/lib/firebase.js')
+          firebase.write_text("""import { getApps, initializeApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
+
+export const firebaseConfig = {
+  apiKey: 'AIzaSyCTEmqxiRR6SbzZDcqnn0wMrPvm2IFSDXw',
+  authDomain: 'upagro-caa98.firebaseapp.com',
+  databaseURL: 'https://upagro-caa98-default-rtdb.firebaseio.com',
+  projectId: 'upagro-caa98',
+  storageBucket: 'upagro-caa98.firebasestorage.app',
+  messagingSenderId: '364703805987',
+  appId: '1:364703805987:web:8c75b8931a48b3f7c63796',
+  measurementId: 'G-GG4CLWL3QB',
+};
+
+const app = getApps()[0] ?? initializeApp(firebaseConfig);
+
+export const auth = getAuth(app);
+export const db = getFirestore(app);
+export const storage = getStorage(app);
+export const isFirebaseConfigured = true;
+export { app };
+""", encoding='utf-8')
+
+          Path('.firebaserc').write_text('{\n  "projects": {\n    "default": "upagro-caa98"\n  }\n}\n', encoding='utf-8')
+
+          deploy = Path('.github/workflows/deploy.yml')
+          if deploy.exists():
+              t = deploy.read_text(encoding='utf-8').replace('VITE_BASE_PATH: /cor/', 'VITE_BASE_PATH: /koleni/')
+              deploy.write_text(t, encoding='utf-8')
+
+          index = Path('index.html')
+          if index.exists():
+              t = index.read_text(encoding='utf-8')
+              t = re.sub(r'<title>.*?</title>', '<title>Koleni | Personalização de Uniformes</title>', t, flags=re.S)
+              index.write_text(t, encoding='utf-8')
+          PY
+
+      - name: Validar build
+        run: |
+          npm install
+          npm run build
+
+      - name: Gravar sistema completo no repositório
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          if git diff --cached --quiet; then
+            echo 'Nenhuma alteração para gravar.'
+          else
+            git commit -m 'feat: clona sistema base e personaliza para Koleni'
+            git push origin main
+          fi
