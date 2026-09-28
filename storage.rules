@@ -14,11 +14,52 @@ service firebase.storage {
       return firestore.get(/databases/(default)/documents/staff/$(request.auth.uid)).data;
     }
 
+    function hasLegacyAdminProfile() {
+      return isSignedIn()
+        && firestore.exists(/databases/(default)/documents/admins/$(request.auth.uid));
+    }
+
+    function legacyAdminData() {
+      return firestore.get(/databases/(default)/documents/admins/$(request.auth.uid)).data;
+    }
+
+    function hasLegacyUserProfile() {
+      return isSignedIn()
+        && firestore.exists(/databases/(default)/documents/usuarios/$(request.auth.uid));
+    }
+
+    function legacyUserData() {
+      return firestore.get(/databases/(default)/documents/usuarios/$(request.auth.uid)).data;
+    }
+
+    function legacyAdminIsValid() {
+      return hasLegacyAdminProfile()
+        && (
+          legacyAdminData().tipo == 'admin'
+          || legacyAdminData().role == 'admin'
+        )
+        && (
+          legacyAdminData().ativo == true
+          || legacyAdminData().active == true
+        );
+    }
+
+    function legacyUserIsAdmin() {
+      return hasLegacyUserProfile()
+        && (
+          legacyUserData().tipo == 'admin'
+          || legacyUserData().role == 'admin'
+        )
+        && (
+          legacyUserData().ativo == true
+          || legacyUserData().active == true
+        );
+    }
+
     function isLegacyAdmin() {
       return isSignedIn()
         && !hasStaffProfile()
-        && firestore.exists(/databases/(default)/documents/admins/$(request.auth.uid))
-        && firestore.get(/databases/(default)/documents/admins/$(request.auth.uid)).data.role == 'admin';
+        && (legacyAdminIsValid() || legacyUserIsAdmin());
     }
 
     function isActiveStaff() {
@@ -80,7 +121,6 @@ service firebase.storage {
       allow delete: if isAdmin();
     }
 
-    // Compatibilidade com arquivos antigos já salvos antes da biblioteca deduplicada.
     match /logos/{uid}/{fileName} {
       allow read: if isActiveStaff();
       allow create, update: if canSell()
