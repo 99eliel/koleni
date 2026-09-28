@@ -1,0 +1,51 @@
+/* Ajuste isolado da marca Koleni na tela de login */
+.login-card .login-brand-block{
+  overflow:visible!important;
+}
+
+.login-card .martinpel-brand{
+  width:100%!important;
+  justify-content:center!important;
+  overflow:visible!important;
+}
+
+.login-card .martinpel-brand-emblem{
+  width:min(100%,360px)!important;
+  min-width:0!important;
+  max-width:360px!important;
+  justify-content:center!important;
+  overflow:visible!important;
+}
+
+.login-card .koleni-wordmark{
+  width:100%!important;
+  min-width:0!important;
+  max-width:340px!important;
+  align-items:center!important;
+  overflow:visible!important;
+}
+
+.login-card .koleni-wordmark-main{
+  width:100%!important;
+  text-align:center!important;
+  font-size:clamp(2.65rem,7vw,3.05rem)!important;
+  line-height:.92!important;
+  letter-spacing:-.055em!important;
+  white-space:nowrap!important;
+  overflow:visible!important;
+}
+
+.login-card .koleni-wordmark-sub{
+  padding-left:0!important;
+  margin-top:10px!important;
+  font-size:.92rem!important;
+  letter-spacing:.12em!important;
+  text-align:center!important;
+}
+
+@media(max-width:520px){
+  .login-card .martinpel-brand-emblem{max-width:300px!important}
+  .login-card .koleni-wordmark{max-width:285px!important}
+  .login-card .koleni-wordmark-main{font-size:2.45rem!important}
+  .login-card .koleni-wordmark-sub{font-size:.82rem!important}
+}
