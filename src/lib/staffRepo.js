@@ -7,6 +7,31 @@ export const STAFF_ROLES = {
   production: 'Produção',
 };
 
+function normalizeLegacyRole(data = {}) {
+  const rawRole = String(data.role || data.tipo || '').trim().toLowerCase();
+  if (rawRole === 'admin' || rawRole === 'administrador') return 'admin';
+  if (rawRole === 'seller' || rawRole === 'vendedor') return 'seller';
+  if (rawRole === 'production' || rawRole === 'producao' || rawRole === 'produção') return 'production';
+  return '';
+}
+
+function normalizeLegacyActive(data = {}) {
+  if (typeof data.active === 'boolean') return data.active;
+  if (typeof data.ativo === 'boolean') return data.ativo;
+  return false;
+}
+
+function profileFromLegacy(user, data = {}, role = '') {
+  return {
+    uid: user.uid,
+    name: data.name || data.nome || user.displayName || 'Usuário',
+    email: data.email || user.email || '',
+    role,
+    active: normalizeLegacyActive(data),
+    ...data,
+  };
+}
+
 export async function getStaffAccess(user) {
   if (!user?.uid) return { allowed: false, active: false, role: '', profile: null, legacy: false };
 
@@ -24,23 +49,40 @@ export async function getStaffAccess(user) {
     };
   }
 
-  // Compatibilidade temporária: o administrador atual continua acessando
-  // até que seu perfil seja migrado para staff/{uid}.
+  // Compatibilidade com os dados já existentes no Firebase antigo.
+  // Aceita tanto role/active quanto tipo/ativo.
   const legacyAdmin = await getDoc(doc(db, 'admins', user.uid));
-  if (legacyAdmin.exists() && legacyAdmin.data()?.role === 'admin') {
-    return {
-      allowed: true,
-      active: true,
-      role: 'admin',
-      profile: {
-        uid: user.uid,
-        name: user.displayName || 'Administrador',
-        email: user.email || '',
-        role: 'admin',
+  if (legacyAdmin.exists()) {
+    const data = legacyAdmin.data();
+    const role = normalizeLegacyRole(data);
+    const active = normalizeLegacyActive(data);
+    if (role === 'admin' && active) {
+      return {
+        allowed: true,
         active: true,
-      },
-      legacy: true,
-    };
+        role: 'admin',
+        profile: profileFromLegacy(user, data, 'admin'),
+        legacy: true,
+      };
+    }
+  }
+
+  // Segunda compatibilidade: alguns projetos antigos guardavam o perfil
+  // principal em usuarios/{uid} com tipo e ativo.
+  const legacyUser = await getDoc(doc(db, 'usuarios', user.uid));
+  if (legacyUser.exists()) {
+    const data = legacyUser.data();
+    const role = normalizeLegacyRole(data);
+    const active = normalizeLegacyActive(data);
+    if (active && STAFF_ROLES[role]) {
+      return {
+        allowed: true,
+        active: true,
+        role,
+        profile: profileFromLegacy(user, data, role),
+        legacy: true,
+      };
+    }
   }
 
   return { allowed: false, active: false, role: '', profile: null, legacy: false };
