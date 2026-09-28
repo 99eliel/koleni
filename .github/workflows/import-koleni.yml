@@ -1,52 +1,32 @@
-name: Importar base do sistema Koleni
+name: Importar sistema base
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
 
 permissions:
   contents: write
 
 jobs:
   importar:
-    if: "!contains(github.event.head_commit.message, '[koleni-importado]')"
+    if: ${{ !contains(github.event.head_commit.message, '[base-importada]') }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Koleni
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Clonar sistema base completo
+      - name: Copiar repositorio base
         run: |
-          rm -rf /tmp/cor-base
           git clone --depth 1 https://github.com/99eliel/cor.git /tmp/cor-base
           rsync -a --exclude='.git' /tmp/cor-base/ ./
 
-      - name: Personalizar para Koleni
-        run: |
-          find . -type f \( -name '*.js' -o -name '*.jsx' -o -name '*.css' -o -name '*.html' -o -name '*.md' -o -name '*.json' -o -name '*.yml' -o -name '*.yaml' \) -not -path './.git/*' -print0 | xargs -0 sed -i -e 's/personalizamartinpel/upagro-caa98/g' -e 's/Martinpel/Koleni/g' -e 's/MartinPel/Koleni/g' -e 's/MARTINPEL/KOLENI/g' -e 's/martinpel/koleni/g' -e 's#/cor/#/koleni/#g'
-          [ -f src/martinpel-theme.css ] && mv src/martinpel-theme.css src/koleni-theme.css || true
-          [ -f src/lib/martinpelLogo.js ] && mv src/lib/martinpelLogo.js src/lib/koleniLogo.js || true
-          [ -f src/components/MartinpelBrand.jsx ] && mv src/components/MartinpelBrand.jsx src/components/KoleniBrand.jsx || true
-          printf '%s' 'aW1wb3J0IHsgZ2V0QXBwcywgaW5pdGlhbGl6ZUFwcCB9IGZyb20gJ2ZpcmViYXNlL2FwcCc7CmltcG9ydCB7IGdldEF1dGggfSBmcm9tICdmaXJlYmFzZS9hdXRoJzsKaW1wb3J0IHsgZ2V0RmlyZXN0b3JlIH0gZnJvbSAnZmlyZWJhc2UvZmlyZXN0b3JlJzsKaW1wb3J0IHsgZ2V0U3RvcmFnZSB9IGZyb20gJ2ZpcmViYXNlL3N0b3JhZ2UnOwoKZXhwb3J0IGNvbnN0IGZpcmViYXNlQ29uZmlnID0gewogIGFwaUtleTogJ0FJemFTeUNURW1xeGlSUjZTYnpaRGNxbm4wd01yUHZtMklGU0RYdycsCiAgYXV0aERvbWFpbjogJ3VwYWdyby1jYWE5OC5maXJlYmFzZWFwcC5jb20nLAogIGRhdGFiYXNlVVJMOiAnaHR0cHM6Ly91cGFncm8tY2FhOTgtZGVmYXVsdC1ydGRiLmZpcmViYXNlaW8uY29tJywKICBwcm9qZWN0SWQ6ICd1cGFncm8tY2FhOTgnLAogIHN0b3JhZ2VCdWNrZXQ6ICd1cGFncm8tY2FhOTguZmlyZWJhc2VzdG9yYWdlLmFwcCcsCiAgbWVzc2FnaW5nU2VuZGVySWQ6ICczNjQ3MDM4MDU5ODcnLAogIGFwcElkOiAnMTozNjQ3MDM4MDU5ODc6d2ViOjhjNzViODkzMWE0OGIzZjdjNjM3OTYnLAogIG1lYXN1cmVtZW50SWQ6ICdHLUdHNENMV0wzUUInLAp9OwoKY29uc3QgYXBwID0gZ2V0QXBwcygpWzBdID8/IGluaXRpYWxpemVBcHAoZmlyZWJhc2VDb25maWcpOwoKZXhwb3J0IGNvbnN0IGF1dGggPSBnZXRBdXRoKGFwcCk7CmV4cG9ydCBjb25zdCBkYiA9IGdldEZpcmVzdG9yZShhcHApOwpleHBvcnQgY29uc3Qgc3RvcmFnZSA9IGdldFN0b3JhZ2UoYXBwKTsKZXhwb3J0IGNvbnN0IGlzRmlyZWJhc2VDb25maWd1cmVkID0gdHJ1ZTsKZXhwb3J0IHsgYXBwIH07Cg==' | base64 -d > src/lib/firebase.js
-          printf '{\n  "projects": {\n    "default": "upagro-caa98"\n  }\n}\n' > .firebaserc
-          sed -i 's#<meta name="theme-color" content="[^"]*" />#<meta name="theme-color" content="#ed1c24" />#' index.html
-          sed -i 's#<title>.*</title>#<title>Gestão de Personalização | Koleni</title>#' index.html
-
-      - name: Validar build
-        run: |
-          npm install
-          npm run build
-
-      - name: Gravar sistema completo
+      - name: Commit da copia
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
-          if git diff --cached --quiet; then
-            echo 'Nenhuma alteração para gravar.'
-          else
-            git commit -m 'feat: sistema Koleni completo [koleni-importado]'
-            git push origin main
-          fi
+          git commit -m 'chore: copia sistema base [base-importada]' || exit 0
+          git push origin main
