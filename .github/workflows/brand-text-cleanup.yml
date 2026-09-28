@@ -1,0 +1,41 @@
+name: Limpar referencias antigas da marca
+
+on:
+  push:
+    paths:
+      - '.github/workflows/brand-text-cleanup.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Substituir referencias visiveis
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          for path in Path('src').rglob('*'):
+              if not path.is_file() or path.suffix.lower() not in {'.js','.jsx','.css'}:
+                  continue
+              text = path.read_text(encoding='utf-8')
+              updated = text.replace('Equipe Martinpel', 'Equipe Koleni').replace('Central de vendas Martinpel', 'Central de vendas Koleni')
+              if updated != text:
+                  path.write_text(updated, encoding='utf-8')
+          PY
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src
+          if git diff --cached --quiet; then
+            echo 'Nada para alterar.'
+          else
+            git commit -m 'refactor: remove referencias visiveis a marca antiga'
+            git push origin main
+          fi
