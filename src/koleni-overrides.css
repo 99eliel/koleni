@@ -1,0 +1,79 @@
+:root{
+  --mp-navy:#090909;
+  --mp-navy-2:#191919;
+  --mp-navy-3:#2a2a2a;
+  --mp-blue:#ed1c24;
+  --mp-blue-soft:#fff0f1;
+  --mp-sky:#fafafa;
+  --mp-ink:#151515;
+  --mp-muted:#6f6f6f;
+  --mp-border:#e4e4e4;
+  --mp-panel:#ffffff;
+  --mp-danger:#ed1c24;
+  --mp-shadow:0 18px 45px rgba(0,0,0,.12);
+  --mp-shadow-soft:0 8px 24px rgba(0,0,0,.08);
+}
+
+body{
+  background:
+    radial-gradient(circle at 8% 0%,rgba(237,28,36,.08),transparent 30%),
+    linear-gradient(180deg,#ffffff 0,#f7f7f7 420px,#f3f3f3 100%);
+}
+
+.martinpel-appbar,
+.catalog-hero,
+.canvas-toolbar,
+.login-brand-block{
+  background:linear-gradient(135deg,#050505 0%,#111 58%,#272727 100%)!important;
+}
+
+.martinpel-appbar{
+  border-bottom:4px solid #ed1c24;
+  box-shadow:0 18px 44px rgba(0,0,0,.18);
+}
+
+.martinpel-brand-logo{
+  background:#050505!important;
+}
+
+.button-primary,
+.admin-main-tabs button.active{
+  background:linear-gradient(135deg,#ed1c24,#c81018)!important;
+  color:#fff!important;
+}
+
+.button-primary:not(:disabled):hover{
+  background:linear-gradient(135deg,#f52a32,#b80f16)!important;
+}
+
+.eyebrow,
+.catalog-kicker{
+  color:#ed1c24!important;
+}
+
+.garment-meta-bar,
+.sidebar-panel,
+.inspector-panel{
+  border-top-color:#ed1c24!important;
+}
+
+.region-card.selected{
+  border-color:#ed1c24!important;
+  box-shadow:0 0 0 3px rgba(237,28,36,.09)!important;
+}
+
+input:focus,select:focus,textarea:focus{
+  border-color:#ed1c24!important;
+  box-shadow:0 0 0 3px rgba(237,28,36,.12)!important;
+}
+
+.login-shell{
+  background:
+    radial-gradient(circle at 50% -10%,rgba(237,28,36,.24),transparent 35%),
+    linear-gradient(145deg,#050505,#111 55%,#242424)!important;
+}
+
+::selection{
+  background:#ed1c24;
+  color:#fff;
+}
