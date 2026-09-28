@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { saveProductionChecklist, setOrderStatus } from '../lib/orderRepo';
+import { generateOrderReportPdf } from '../lib/orderReportPdf';
 import { openTechnicalSheet } from '../lib/technicalSheet';
 
 const STATUS_OPTIONS = [
@@ -86,6 +87,18 @@ export default function OrderOperationsPanel({ order, disabled = false, onSaved 
     }
   }
 
+  async function downloadReport() {
+    setSaving('pdf');
+    setError('');
+    try {
+      await generateOrderReportPdf({ ...order, status, productionChecklist: checklist });
+    } catch (err) {
+      setError(err.message || 'Não foi possível gerar o relatório PDF.');
+    } finally {
+      setSaving('');
+    }
+  }
+
   async function copyApprovalLink() {
     if (!order.approvalToken) return;
     const base = `${window.location.origin}${window.location.pathname}`;
@@ -126,10 +139,14 @@ export default function OrderOperationsPanel({ order, disabled = false, onSaved 
             {STATUS_OPTIONS.map(([value, label]) => <option value={value} key={value}>{label}</option>)}
           </select>
         </label>
-        <button className="button button-secondary" type="button" onClick={printSheet} disabled={disabled || saving === 'sheet'}>
+        <button className="button button-secondary" type="button" onClick={printSheet} disabled={disabled || Boolean(saving)}>
           {saving === 'sheet' ? 'Gerando…' : 'Ficha técnica + QR'}
         </button>
       </div>
+
+      <button className="button button-primary full-width" type="button" onClick={downloadReport} disabled={disabled || Boolean(saving)}>
+        {saving === 'pdf' ? 'Gerando relatório…' : 'Baixar relatório PDF'}
+      </button>
 
       <div className="production-checklist-head">
         <span>Checklist de conferência</span>
