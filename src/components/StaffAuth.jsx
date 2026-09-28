@@ -117,7 +117,7 @@ export default function StaffAuth({ children, allowedRoles = DEFAULT_ROLES }) {
       <main className="login-shell">
         <form className="panel login-card staff-login-card" onSubmit={login}>
           <div className="login-brand-block"><MartinpelBrand subtitle="Acesso interno" /></div>
-          <p className="eyebrow">Equipe Martinpel</p>
+          <p className="eyebrow">Equipe Koleni</p>
           <h1>Gestão de Personalização</h1>
           <p className="muted">Entre com seu e-mail e senha. O acesso depende da função e do status definidos pelo administrador.</p>
           <label>E-mail<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" /></label>

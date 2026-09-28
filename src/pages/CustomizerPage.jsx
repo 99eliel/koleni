@@ -63,7 +63,7 @@ function Catalog({ staffUser, isAdmin, logout }) {
         <div className="seller-global-actions">
           <div className="seller-session">
             <span>Vendedor conectado</span>
-            <strong>{staffUser?.email || 'Equipe Martinpel'}</strong>
+            <strong>{staffUser?.email || 'Equipe Koleni'}</strong>
           </div>
           {isAdmin && <Link className="button button-light catalog-admin-link" to="/admin">Painel administrativo</Link>}
           <button className="button admin-logout-button" type="button" onClick={logout}>Sair</button>
@@ -72,7 +72,7 @@ function Catalog({ staffUser, isAdmin, logout }) {
 
       <header className="customer-header catalog-header catalog-hero seller-catalog-hero">
         <div className="catalog-hero-copy">
-          <span className="catalog-kicker">Central de vendas Martinpel</span>
+          <span className="catalog-kicker">Central de vendas Koleni</span>
           <h1>Monte a personalização junto com o cliente.</h1>
           <p>Escolha uma peça, defina cores, posição e medida das logos e registre um pedido pronto para orçamento e produção.</p>
         </div>
@@ -545,7 +545,7 @@ export default function CustomizerPage({ staffUser, isAdmin = false, logout }) {
       <div className="martinpel-appbar customer-brandbar seller-brandbar">
         <MartinpelBrand compact subtitle="Atendimento de venda" />
         <div className="seller-global-actions">
-          <div className="seller-session compact"><span>Vendedor</span><strong>{staffUser?.email || 'Equipe Martinpel'}</strong></div>
+          <div className="seller-session compact"><span>Vendedor</span><strong>{staffUser?.email || 'Equipe Koleni'}</strong></div>
           <Link className="button button-light back-to-catalog" to="/">← Catálogo</Link>
           <button className="button admin-logout-button" type="button" onClick={logout}>Sair</button>
         </div>

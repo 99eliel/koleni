@@ -122,7 +122,7 @@ function TeamManagement({ user, profile, legacyAccess, logout }) {
       <section className="team-hero panel">
         <div>
           <p className="eyebrow">Segurança e acessos</p>
-          <h1>Equipe Martinpel</h1>
+          <h1>Equipe Koleni</h1>
           <p>Somente usuários presentes aqui, ativos e com a função correta, podem usar as áreas internas do sistema.</p>
         </div>
         <div className="team-summary">
