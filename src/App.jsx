@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Link, Navigate, Route, Routes } from 'react-router-dom';
 import ApprovalShareToast from './components/ApprovalShareToast';
 import StaffAuth from './components/StaffAuth';
 import AdminPage from './pages/AdminPage';
@@ -20,6 +20,7 @@ function SellerRoute() {
           : (
             <>
               <CustomizerPage staffUser={user} staffProfile={profile} isAdmin={isAdmin} logout={logout} />
+              <Link className="seller-orders-shortcut" to="/meus-pedidos">Meus pedidos</Link>
             </>
           )
       )}
