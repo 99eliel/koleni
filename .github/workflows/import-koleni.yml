@@ -21,7 +21,7 @@ jobs:
       - name: Copiar repositorio base
         run: |
           git clone --depth 1 https://github.com/99eliel/cor.git /tmp/cor-base
-          rsync -a --exclude='.git' /tmp/cor-base/ ./
+          rsync -a --exclude='.git' --exclude='.github/workflows/deploy.yml' /tmp/cor-base/ ./
 
       - name: Commit da copia
         run: |
