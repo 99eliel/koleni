@@ -1,0 +1,112 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function hasStaffProfile() {
+      return isSignedIn()
+        && firestore.exists(/databases/(default)/documents/staff/$(request.auth.uid));
+    }
+
+    function staffData() {
+      return firestore.get(/databases/(default)/documents/staff/$(request.auth.uid)).data;
+    }
+
+    function isLegacyAdmin() {
+      return isSignedIn()
+        && !hasStaffProfile()
+        && firestore.exists(/databases/(default)/documents/admins/$(request.auth.uid))
+        && firestore.get(/databases/(default)/documents/admins/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function isActiveStaff() {
+      return isSignedIn()
+        && (
+          (hasStaffProfile()
+            && staffData().active == true
+            && staffData().role in ['admin', 'seller', 'production'])
+          || isLegacyAdmin()
+        );
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && (
+          (hasStaffProfile()
+            && staffData().active == true
+            && staffData().role == 'admin')
+          || isLegacyAdmin()
+        );
+    }
+
+    function isSeller() {
+      return isSignedIn()
+        && hasStaffProfile()
+        && staffData().active == true
+        && staffData().role == 'seller';
+    }
+
+    function canSell() {
+      return isAdmin() || isSeller();
+    }
+
+    function isImage(maxBytes) {
+      return request.resource != null
+        && request.resource.size < maxBytes
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    function isPdf(maxBytes) {
+      return request.resource != null
+        && request.resource.size < maxBytes
+        && request.resource.contentType == 'application/pdf';
+    }
+
+    function isLogoAsset() {
+      return isImage(5 * 1024 * 1024) || isPdf(15 * 1024 * 1024);
+    }
+
+    match /garments/{garmentId}/{fileName} {
+      allow read: if isActiveStaff();
+      allow create, update: if isAdmin() && isImage(10 * 1024 * 1024);
+      allow delete: if isAdmin();
+    }
+
+    match /logo-assets/{hash}/{fileName} {
+      allow read: if isActiveStaff();
+      allow create, update: if canSell() && isLogoAsset();
+      allow delete: if isAdmin();
+    }
+
+    // Compatibilidade com arquivos antigos já salvos antes da biblioteca deduplicada.
+    match /logos/{uid}/{fileName} {
+      allow read: if isActiveStaff();
+      allow create, update: if canSell()
+        && request.auth.uid == uid
+        && isImage(5 * 1024 * 1024);
+      allow delete: if isAdmin() || (canSell() && request.auth.uid == uid);
+    }
+
+    match /logo-originals/{uid}/{fileName} {
+      allow read: if isActiveStaff();
+      allow create, update: if canSell()
+        && request.auth.uid == uid
+        && isPdf(15 * 1024 * 1024);
+      allow delete: if isAdmin() || (canSell() && request.auth.uid == uid);
+    }
+
+    match /final-renders/{uid}/{fileName} {
+      allow read: if isActiveStaff();
+      allow create, update: if canSell()
+        && request.auth.uid == uid
+        && isImage(10 * 1024 * 1024);
+      allow delete: if isAdmin() || (canSell() && request.auth.uid == uid);
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

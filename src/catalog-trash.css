@@ -1,0 +1,235 @@
+.admin-archive-shortcut{
+  position:fixed;
+  right:28px;
+  bottom:28px;
+  z-index:120;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:44px;
+  padding:0 18px;
+  border:1px solid #c9d8e6;
+  border-radius:999px;
+  background:#fff;
+  color:#062b52;
+  font-weight:900;
+  text-decoration:none;
+  box-shadow:0 14px 34px rgba(6,43,82,.18);
+  transition:.18s ease;
+}
+
+.admin-archive-shortcut:hover{
+  transform:translateY(-2px);
+  background:#062b52;
+  color:#fff;
+}
+
+.trash-shell{
+  min-height:100vh;
+  padding:24px;
+  background:linear-gradient(180deg,#eaf2f8 0,#f6f9fc 40%,#eef4f8 100%);
+  color:#10223a;
+}
+
+.trash-topbar{
+  max-width:1320px;
+  margin:0 auto 18px;
+  padding:18px 22px;
+  border-radius:22px;
+  background:linear-gradient(135deg,#062b52,#0b4476);
+  box-shadow:0 18px 45px rgba(6,43,82,.2);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  overflow:hidden;
+}
+
+.trash-topbar .martinpel-system-brand{
+  min-width:0;
+}
+
+.trash-topbar-actions{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+
+.trash-hero{
+  max-width:1320px;
+  margin:0 auto 18px;
+  padding:26px 28px;
+  border-radius:22px;
+  background:#fff;
+  border:1px solid #d9e4ef;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:24px;
+  box-shadow:0 14px 35px rgba(16,34,58,.08);
+}
+
+.trash-kicker{
+  display:block;
+  margin-bottom:6px;
+  font-size:.75rem;
+  font-weight:900;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:#1d6fae;
+}
+
+.trash-hero h1{
+  margin:0 0 8px;
+  font-size:clamp(1.8rem,3vw,2.6rem);
+}
+
+.trash-hero p{
+  margin:0;
+  max-width:800px;
+  color:#64748b;
+  line-height:1.6;
+}
+
+.trash-count{
+  min-width:120px;
+  padding:16px 20px;
+  border-radius:18px;
+  background:#eef5fb;
+  text-align:center;
+}
+
+.trash-count strong{
+  display:block;
+  font-size:2rem;
+  color:#062b52;
+}
+
+.trash-count span{
+  color:#64748b;
+  font-size:.78rem;
+  font-weight:800;
+}
+
+.trash-shell>.notice{
+  max-width:1320px;
+  margin:0 auto 18px;
+}
+
+.trash-grid{
+  max-width:1320px;
+  margin:0 auto;
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+  gap:18px;
+}
+
+.trash-card{
+  overflow:hidden;
+  border:1px solid #d8e2ec;
+}
+
+.trash-card-image{
+  min-height:230px;
+  display:grid;
+  place-items:center;
+  background:linear-gradient(145deg,#e9f0f6,#f9fbfd);
+  border-bottom:1px solid #d9e4ef;
+}
+
+.trash-card-image img{
+  display:block;
+  width:100%;
+  height:230px;
+  object-fit:contain;
+  padding:18px;
+}
+
+.trash-card-image span{
+  color:#64748b;
+  font-weight:800;
+}
+
+.trash-card-body{
+  padding:20px;
+}
+
+.trash-status{
+  display:inline-flex;
+  align-items:center;
+  margin-bottom:10px;
+  padding:5px 9px;
+  border-radius:999px;
+  background:#eef1f5;
+  color:#536274;
+  font-size:.72rem;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+
+.trash-card h2{
+  margin:0 0 7px;
+  font-size:1.22rem;
+}
+
+.trash-card code{
+  display:block;
+  max-width:100%;
+  overflow-wrap:anywhere;
+  color:#64748b;
+  font-size:.72rem;
+}
+
+.trash-card p{
+  margin:14px 0 18px;
+  color:#64748b;
+  font-size:.88rem;
+  line-height:1.5;
+}
+
+.trash-card-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+
+.trash-card-actions .order-delete-button{
+  border-color:#e7b9bd;
+  background:#fff4f4;
+  color:#a61b28;
+}
+
+.trash-card-actions .order-delete-button:hover:not(:disabled){
+  background:#a61b28;
+  border-color:#a61b28;
+  color:#fff;
+}
+
+.trash-empty{
+  max-width:1320px;
+  margin:0 auto;
+  padding:48px;
+  text-align:center;
+  display:grid;
+  gap:6px;
+}
+
+.trash-empty strong{
+  font-size:1.15rem;
+}
+
+.trash-empty span{
+  color:#64748b;
+}
+
+@media (max-width:760px){
+  .admin-archive-shortcut{right:14px;bottom:14px}
+  .trash-shell{padding:12px}
+  .trash-topbar,.trash-hero{align-items:stretch;flex-direction:column}
+  .trash-topbar-actions{justify-content:flex-start}
+  .trash-count{width:100%}
+  .trash-card-actions{grid-template-columns:1fr}
+}

@@ -1,0 +1,13 @@
+[
+  {
+    "origin": [
+      "https://99eliel.github.io",
+      "https://personalizamartinpel.web.app",
+      "https://personalizamartinpel.firebaseapp.com",
+      "http://localhost:5173"
+    ],
+    "method": ["GET", "HEAD"],
+    "responseHeader": ["Content-Type", "Content-Length", "ETag"],
+    "maxAgeSeconds": 3600
+  }
+]

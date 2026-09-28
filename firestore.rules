@@ -1,0 +1,200 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function hasStaffProfile() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/staff/$(request.auth.uid));
+    }
+
+    function staffData() {
+      return get(/databases/$(database)/documents/staff/$(request.auth.uid)).data;
+    }
+
+    function isLegacyAdmin() {
+      return isSignedIn()
+        && !hasStaffProfile()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function isActiveStaff() {
+      return isSignedIn()
+        && (
+          (hasStaffProfile()
+            && staffData().active == true
+            && staffData().role in ['admin', 'seller', 'production'])
+          || isLegacyAdmin()
+        );
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && (
+          (hasStaffProfile()
+            && staffData().active == true
+            && staffData().role == 'admin')
+          || isLegacyAdmin()
+        );
+    }
+
+    function isSeller() {
+      return isSignedIn()
+        && hasStaffProfile()
+        && staffData().active == true
+        && staffData().role == 'seller';
+    }
+
+    function isProduction() {
+      return isSignedIn()
+        && hasStaffProfile()
+        && staffData().active == true
+        && staffData().role == 'production';
+    }
+
+    function canSell() {
+      return isAdmin() || isSeller();
+    }
+
+    function isProductionOrderUpdate() {
+      return isProduction()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status',
+          'completedAt',
+          'productionChecklist',
+          'updatedAt'
+        ]);
+    }
+
+    function isProductionSellerSummaryUpdate() {
+      return isProduction()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status',
+          'completedAt',
+          'updatedAt'
+        ]);
+    }
+
+    function isPublicApprovalUpdate() {
+      return request.auth == null
+        && resource.data.approvalStatus == 'pending'
+        && resource.data.approvalToken is string
+        && request.resource.data.approvalProof == resource.data.approvalToken
+        && request.resource.data.approvalStatus in ['approved', 'changes_requested']
+        && request.resource.data.status in ['approved', 'approval']
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'approvalProof',
+          'approvalStatus',
+          'approvalNote',
+          'approvalRespondedAt',
+          'status',
+          'updatedAt'
+        ]);
+    }
+
+    function isPublicSellerSummaryApprovalUpdate() {
+      return request.auth == null
+        && resource.data.approvalStatus == 'pending'
+        && resource.data.approvalToken is string
+        && request.resource.data.approvalProof == resource.data.approvalToken
+        && request.resource.data.approvalStatus in ['approved', 'changes_requested']
+        && request.resource.data.status in ['approved', 'approval']
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'approvalProof',
+          'approvalStatus',
+          'status',
+          'updatedAt'
+        ]);
+    }
+
+    match /garments/{garmentId} {
+      allow read: if isActiveStaff();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /orders/{orderId} {
+      allow create: if canSell()
+        && request.resource.data.sellerUid == request.auth.uid
+        && request.resource.data.garmentId is string
+        && request.resource.data.colorChoices is map
+        && request.resource.data.logos is list
+        && request.resource.data.finalImages is map;
+      allow read: if isAdmin() || isProduction();
+      allow delete: if isAdmin();
+      allow update: if isAdmin() || isProductionOrderUpdate() || isPublicApprovalUpdate();
+    }
+
+    match /sellerOrders/{uid}/orders/{orderId} {
+      allow read: if isAdmin() || isProduction() || (isActiveStaff() && request.auth.uid == uid);
+      allow create: if canSell()
+        && request.auth.uid == uid
+        && request.resource.data.sellerUid == uid
+        && request.resource.data.orderId == orderId
+        && request.resource.data.displayCode is string;
+      allow update: if isAdmin() || isProductionSellerSummaryUpdate() || isPublicSellerSummaryApprovalUpdate();
+      allow delete: if isAdmin();
+    }
+
+    match /system/orderCounter {
+      allow read: if canSell();
+      allow create: if canSell()
+        && request.resource.data.next == 2;
+      allow update: if canSell()
+        && request.resource.data.next == resource.data.next + 1
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['next', 'updatedAt']);
+      allow delete: if false;
+    }
+
+    match /approvalPreviews/{token} {
+      allow get: if true;
+      allow list: if false;
+      allow create: if canSell()
+        && request.resource.data.sellerUid == request.auth.uid
+        && request.resource.data.orderId is string;
+      allow update: if request.auth == null
+        && resource.data.status == 'pending'
+        && request.resource.data.status in ['approved', 'changes_requested']
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status',
+          'note',
+          'respondedAt'
+        ]);
+      allow delete: if isAdmin();
+    }
+
+    match /customers/{customerId} {
+      allow read, create, update: if canSell();
+      allow delete: if isAdmin();
+    }
+
+    match /logoAssets/{hash} {
+      allow read: if isActiveStaff();
+      allow create: if canSell()
+        && request.resource.data.hash == hash
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.url is string;
+      allow update, delete: if isAdmin();
+    }
+
+    match /staff/{uid} {
+      allow get: if isAdmin() || (isSignedIn() && request.auth.uid == uid);
+      allow list: if isAdmin();
+      allow create, update: if isAdmin();
+      allow delete: if isAdmin() && request.auth.uid != uid;
+    }
+
+    // Compatibilidade de migração. Depois que todos os administradores
+    // estiverem em staff/{uid}, esta coleção pode ser removida.
+    match /admins/{uid} {
+      allow read: if isSignedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
