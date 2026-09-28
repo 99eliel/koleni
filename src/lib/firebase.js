@@ -4,13 +4,14 @@ import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 export const firebaseConfig = {
-  apiKey: 'AIzaSyBQ0QQuOzXx1IkbxV1UYF_UmntmTkMV-Wk',
-  authDomain: 'personalizamartinpel.firebaseapp.com',
-  projectId: 'personalizamartinpel',
-  storageBucket: 'personalizamartinpel.firebasestorage.app',
-  messagingSenderId: '696874446840',
-  appId: '1:696874446840:web:d9efa7c76a9395234f300d',
-  measurementId: 'G-0MW8NXLTDX',
+  apiKey: 'AIzaSyCTEmqxiRR6SbzZDcqnn0wMrPvm2IFSDXw',
+  authDomain: 'upagro-caa98.firebaseapp.com',
+  databaseURL: 'https://upagro-caa98-default-rtdb.firebaseio.com',
+  projectId: 'upagro-caa98',
+  storageBucket: 'upagro-caa98.firebasestorage.app',
+  messagingSenderId: '364703805987',
+  appId: '1:364703805987:web:8c75b8931a48b3f7c63796',
+  measurementId: 'G-GG4CLWL3QB',
 };
 
 const app = getApps()[0] ?? initializeApp(firebaseConfig);
