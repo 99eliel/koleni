@@ -5,94 +5,6 @@ service firebase.storage {
       return request.auth != null;
     }
 
-    function hasStaffProfile() {
-      return isSignedIn()
-        && firestore.exists(/databases/(default)/documents/staff/$(request.auth.uid));
-    }
-
-    function staffData() {
-      return firestore.get(/databases/(default)/documents/staff/$(request.auth.uid)).data;
-    }
-
-    function hasLegacyAdminProfile() {
-      return isSignedIn()
-        && firestore.exists(/databases/(default)/documents/admins/$(request.auth.uid));
-    }
-
-    function legacyAdminData() {
-      return firestore.get(/databases/(default)/documents/admins/$(request.auth.uid)).data;
-    }
-
-    function hasLegacyUserProfile() {
-      return isSignedIn()
-        && firestore.exists(/databases/(default)/documents/usuarios/$(request.auth.uid));
-    }
-
-    function legacyUserData() {
-      return firestore.get(/databases/(default)/documents/usuarios/$(request.auth.uid)).data;
-    }
-
-    function legacyAdminIsValid() {
-      return hasLegacyAdminProfile()
-        && (
-          legacyAdminData().tipo == 'admin'
-          || legacyAdminData().role == 'admin'
-        )
-        && (
-          legacyAdminData().ativo == true
-          || legacyAdminData().active == true
-        );
-    }
-
-    function legacyUserIsAdmin() {
-      return hasLegacyUserProfile()
-        && (
-          legacyUserData().tipo == 'admin'
-          || legacyUserData().role == 'admin'
-        )
-        && (
-          legacyUserData().ativo == true
-          || legacyUserData().active == true
-        );
-    }
-
-    function isLegacyAdmin() {
-      return isSignedIn()
-        && !hasStaffProfile()
-        && (legacyAdminIsValid() || legacyUserIsAdmin());
-    }
-
-    function isActiveStaff() {
-      return isSignedIn()
-        && (
-          (hasStaffProfile()
-            && staffData().active == true
-            && staffData().role in ['admin', 'seller', 'production'])
-          || isLegacyAdmin()
-        );
-    }
-
-    function isAdmin() {
-      return isSignedIn()
-        && (
-          (hasStaffProfile()
-            && staffData().active == true
-            && staffData().role == 'admin')
-          || isLegacyAdmin()
-        );
-    }
-
-    function isSeller() {
-      return isSignedIn()
-        && hasStaffProfile()
-        && staffData().active == true
-        && staffData().role == 'seller';
-    }
-
-    function canSell() {
-      return isAdmin() || isSeller();
-    }
-
     function isImage(maxBytes) {
       return request.resource != null
         && request.resource.size < maxBytes
@@ -110,39 +22,39 @@ service firebase.storage {
     }
 
     match /garments/{garmentId}/{fileName} {
-      allow read: if isActiveStaff();
-      allow create, update: if isAdmin() && isImage(10 * 1024 * 1024);
-      allow delete: if isAdmin();
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn() && isImage(10 * 1024 * 1024);
+      allow delete: if isSignedIn();
     }
 
     match /logo-assets/{hash}/{fileName} {
-      allow read: if isActiveStaff();
-      allow create, update: if canSell() && isLogoAsset();
-      allow delete: if isAdmin();
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn() && isLogoAsset();
+      allow delete: if isSignedIn();
     }
 
     match /logos/{uid}/{fileName} {
-      allow read: if isActiveStaff();
-      allow create, update: if canSell()
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn()
         && request.auth.uid == uid
         && isImage(5 * 1024 * 1024);
-      allow delete: if isAdmin() || (canSell() && request.auth.uid == uid);
+      allow delete: if isSignedIn() && request.auth.uid == uid;
     }
 
     match /logo-originals/{uid}/{fileName} {
-      allow read: if isActiveStaff();
-      allow create, update: if canSell()
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn()
         && request.auth.uid == uid
         && isPdf(15 * 1024 * 1024);
-      allow delete: if isAdmin() || (canSell() && request.auth.uid == uid);
+      allow delete: if isSignedIn() && request.auth.uid == uid;
     }
 
     match /final-renders/{uid}/{fileName} {
-      allow read: if isActiveStaff();
-      allow create, update: if canSell()
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn()
         && request.auth.uid == uid
         && isImage(10 * 1024 * 1024);
-      allow delete: if isAdmin() || (canSell() && request.auth.uid == uid);
+      allow delete: if isSignedIn() && request.auth.uid == uid;
     }
 
     match /{allPaths=**} {
