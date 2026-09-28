@@ -1,79 +1,243 @@
 :root{
-  --mp-navy:#090909;
-  --mp-navy-2:#191919;
-  --mp-navy-3:#2a2a2a;
-  --mp-blue:#ed1c24;
+  --mp-navy:#050505;
+  --mp-navy-2:#111111;
+  --mp-navy-3:#202020;
+  --mp-blue:#ef1b25;
   --mp-blue-soft:#fff0f1;
-  --mp-sky:#fafafa;
-  --mp-ink:#151515;
-  --mp-muted:#6f6f6f;
-  --mp-border:#e4e4e4;
+  --mp-sky:#f8f8f8;
+  --mp-ink:#111111;
+  --mp-muted:#707070;
+  --mp-border:#e5e5e5;
   --mp-panel:#ffffff;
-  --mp-danger:#ed1c24;
-  --mp-shadow:0 18px 45px rgba(0,0,0,.12);
-  --mp-shadow-soft:0 8px 24px rgba(0,0,0,.08);
+  --mp-danger:#ef1b25;
+  --mp-success:#187647;
+  --mp-radius:16px;
+  --mp-shadow:0 18px 45px rgba(0,0,0,.11);
+  --mp-shadow-soft:0 8px 24px rgba(0,0,0,.07);
 }
 
+html{background:#f4f4f4}
 body{
   background:
-    radial-gradient(circle at 8% 0%,rgba(237,28,36,.08),transparent 30%),
-    linear-gradient(180deg,#ffffff 0,#f7f7f7 420px,#f3f3f3 100%);
+    linear-gradient(135deg,rgba(239,27,37,.055) 0 12%,transparent 12% 100%),
+    linear-gradient(180deg,#fff 0,#f7f7f7 420px,#f2f2f2 100%);
 }
 
-.martinpel-appbar,
-.catalog-hero,
-.canvas-toolbar,
-.login-brand-block{
-  background:linear-gradient(135deg,#050505 0%,#111 58%,#272727 100%)!important;
+::selection{background:#ef1b25;color:#fff}
+
+.panel,
+.martinpel-page-header,
+.admin-header,
+.customer-header{
+  border-color:#e4e4e4!important;
+  box-shadow:0 10px 30px rgba(0,0,0,.06)!important;
 }
 
 .martinpel-appbar{
-  border-bottom:4px solid #ed1c24;
-  box-shadow:0 18px 44px rgba(0,0,0,.18);
+  position:relative;
+  overflow:hidden;
+  background:#050505!important;
+  border:0!important;
+  border-bottom:5px solid #ef1b25!important;
+  border-radius:18px!important;
+  box-shadow:0 18px 44px rgba(0,0,0,.20)!important;
 }
 
-.martinpel-brand-logo{
+.martinpel-appbar::after{
+  content:"";
+  position:absolute;
+  left:0;right:0;bottom:-1px;
+  height:14px;
+  opacity:.24;
+  background:repeating-linear-gradient(135deg,#000 0 12px,#ef1b25 12px 22px,#000 22px 34px);
+  pointer-events:none;
+}
+
+.martinpel-brand{position:relative;z-index:1;gap:18px}
+.martinpel-brand-emblem{display:flex;align-items:center;flex:0 0 auto}
+.martinpel-brand-logo{display:none!important}
+.koleni-wordmark{display:flex;flex-direction:column;line-height:.84;min-width:176px}
+.koleni-wordmark-main{
+  color:#ef313b;
+  font-family:Arial Black,Arial,sans-serif;
+  font-size:2.2rem;
+  font-weight:900;
+  letter-spacing:-.09em;
+  text-transform:lowercase;
+}
+.koleni-wordmark-sub{
+  color:#fff;
+  margin-top:6px;
+  padding-left:23px;
+  font-size:.78rem;
+  letter-spacing:.08em;
+  text-transform:lowercase;
+}
+.martinpel-brand.is-compact .koleni-wordmark{min-width:145px}
+.martinpel-brand.is-compact .koleni-wordmark-main{font-size:1.8rem}
+.martinpel-brand.is-compact .koleni-wordmark-sub{font-size:.66rem;padding-left:18px}
+.martinpel-brand-copy{padding-left:16px;border-left:1px solid rgba(255,255,255,.18)}
+.martinpel-brand-copy strong{color:#fff!important;font-weight:800;letter-spacing:.01em}
+.martinpel-brand-copy span{color:#bdbdbd!important}
+.martinpel-brand-copy .martinpel-brand-company{color:#ef313b!important;font-size:.68rem;font-weight:900;letter-spacing:.16em}
+
+.catalog-hero{
+  position:relative;
+  overflow:hidden;
+  min-height:238px!important;
+  border:0!important;
+  border-radius:18px!important;
+  color:#fff!important;
+  background:
+    linear-gradient(90deg,rgba(0,0,0,.97) 0%,rgba(0,0,0,.90) 48%,rgba(0,0,0,.74) 100%)!important;
+  box-shadow:0 20px 48px rgba(0,0,0,.18)!important;
+}
+.catalog-hero::before{
+  content:"";
+  position:absolute;
+  inset:auto 0 0 0;
+  height:22px;
+  background:repeating-linear-gradient(135deg,#050505 0 17px,#ef1b25 17px 32px,#050505 32px 49px);
+}
+.catalog-hero::after{
+  content:"K";
+  position:absolute;
+  right:46px;
+  top:-48px;
+  font:900 17rem/1 Arial Black,Arial,sans-serif;
+  color:rgba(239,27,37,.10);
+  transform:rotate(-4deg);
+}
+.catalog-hero-copy{position:relative;z-index:1;max-width:790px}
+.catalog-kicker{
+  color:#ef313b!important;
+  background:transparent!important;
+  padding:0 0 9px!important;
+  border-radius:0!important;
+  font-weight:900!important;
+  letter-spacing:.14em!important;
+}
+.catalog-hero h1{
+  max-width:720px;
+  margin:.12em 0 .3em!important;
+  color:#fff!important;
+  font-size:clamp(2rem,4.2vw,4rem)!important;
+  line-height:.94!important;
+  letter-spacing:-.055em!important;
+  font-weight:900!important;
+}
+.catalog-hero p{max-width:700px;color:#d2d2d2!important;font-size:1rem!important;line-height:1.6!important}
+.catalog-hero-badge{
+  position:relative;z-index:1;
+  border:1px solid rgba(255,255,255,.17)!important;
+  background:rgba(255,255,255,.06)!important;
+  backdrop-filter:blur(8px);
+}
+
+.canvas-toolbar,
+.login-brand-block{
   background:#050505!important;
 }
-
-.button-primary,
-.admin-main-tabs button.active{
-  background:linear-gradient(135deg,#ed1c24,#c81018)!important;
-  color:#fff!important;
-}
-
-.button-primary:not(:disabled):hover{
-  background:linear-gradient(135deg,#f52a32,#b80f16)!important;
-}
-
-.eyebrow,
-.catalog-kicker{
-  color:#ed1c24!important;
-}
-
-.garment-meta-bar,
-.sidebar-panel,
-.inspector-panel{
-  border-top-color:#ed1c24!important;
-}
-
-.region-card.selected{
-  border-color:#ed1c24!important;
-  box-shadow:0 0 0 3px rgba(237,28,36,.09)!important;
-}
-
-input:focus,select:focus,textarea:focus{
-  border-color:#ed1c24!important;
-  box-shadow:0 0 0 3px rgba(237,28,36,.12)!important;
-}
+.canvas-toolbar{border-bottom:3px solid #ef1b25!important}
 
 .login-shell{
   background:
-    radial-gradient(circle at 50% -10%,rgba(237,28,36,.24),transparent 35%),
-    linear-gradient(145deg,#050505,#111 55%,#242424)!important;
+    radial-gradient(circle at 50% -10%,rgba(239,27,37,.20),transparent 34%),
+    linear-gradient(145deg,#020202,#0a0a0a 56%,#1b1b1b)!important;
+}
+.login-card{
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.12)!important;
+  box-shadow:0 30px 80px rgba(0,0,0,.35)!important;
+}
+.login-brand-block{
+  position:relative;
+  margin:-28px -28px 24px!important;
+  padding:28px 26px 36px!important;
+  border-radius:0!important;
+  border-bottom:6px solid #ef1b25;
+}
+.login-brand-block::after{
+  content:"";
+  position:absolute;
+  left:0;right:0;bottom:-6px;height:16px;
+  background:repeating-linear-gradient(135deg,#000 0 13px,#ef1b25 13px 24px,#000 24px 37px);
+}
+.login-card .martinpel-brand-copy{display:none}
+.login-card .martinpel-brand{justify-content:center}
+.login-card .koleni-wordmark{align-items:center;min-width:260px}
+.login-card .koleni-wordmark-main{font-size:3.5rem}
+.login-card .koleni-wordmark-sub{font-size:1rem;padding-left:0;margin-top:13px;letter-spacing:.12em}
+
+.button{border-radius:9px!important;font-weight:850!important}
+.button-primary,
+.admin-main-tabs button.active{
+  background:#ef1b25!important;
+  border-color:#ef1b25!important;
+  color:#fff!important;
+  box-shadow:none!important;
+}
+.button-primary:not(:disabled):hover,
+.admin-main-tabs button.active:hover{background:#d6151e!important}
+.button-secondary{background:#fff!important;color:#111!important;border-color:#d9d9d9!important}
+.button-light{background:#fff!important;color:#111!important;border-color:#fff!important}
+.button-ghost{background:#f5f5f5!important;color:#333!important;border-color:#dedede!important}
+
+.admin-main-tabs{background:#ededed!important;border-color:#dedede!important}
+.admin-main-tabs button{color:#555!important}
+.admin-main-tabs span{color:#111!important;background:#fff!important}
+
+.eyebrow{color:#ef1b25!important}
+.garment-meta-bar,
+.sidebar-panel,
+.inspector-panel{border-top-color:#ef1b25!important}
+.region-card.selected{
+  border-color:#ef1b25!important;
+  box-shadow:0 0 0 3px rgba(239,27,37,.09)!important;
 }
 
-::selection{
-  background:#ed1c24;
-  color:#fff;
+input:focus,select:focus,textarea:focus{
+  border-color:#ef1b25!important;
+  box-shadow:0 0 0 3px rgba(239,27,37,.11)!important;
+}
+
+.catalog-card{
+  overflow:hidden;
+  border-radius:15px!important;
+  transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;
+}
+.catalog-card:hover{
+  transform:translateY(-4px);
+  border-color:#cfcfcf!important;
+  box-shadow:0 18px 40px rgba(0,0,0,.11)!important;
+}
+.catalog-image-wrap{background:linear-gradient(180deg,#fafafa,#efefef)!important}
+.catalog-card-body strong{color:#111!important}
+.catalog-card-body span{color:#ef1b25!important;font-weight:850!important}
+
+.seller-orders-shortcut,
+.admin-production-shortcut,
+.admin-team-shortcut,
+.admin-archive-shortcut{
+  background:#050505!important;
+  color:#fff!important;
+  border:1px solid rgba(255,255,255,.12)!important;
+  box-shadow:0 12px 30px rgba(0,0,0,.18)!important;
+}
+.seller-orders-shortcut:hover,
+.admin-production-shortcut:hover,
+.admin-team-shortcut:hover,
+.admin-archive-shortcut:hover{background:#ef1b25!important}
+
+.notice-success{border-left:4px solid #187647!important}
+.notice-error{border-left:4px solid #ef1b25!important}
+
+@media (max-width:760px){
+  .martinpel-appbar{align-items:flex-start!important}
+  .martinpel-brand-copy{display:none}
+  .koleni-wordmark{min-width:125px}
+  .koleni-wordmark-main{font-size:1.65rem}
+  .catalog-hero{min-height:210px!important;padding:26px 22px 38px!important}
+  .catalog-hero::after{font-size:10rem;right:-20px;top:10px}
+  .catalog-hero h1{font-size:2.35rem!important}
 }
