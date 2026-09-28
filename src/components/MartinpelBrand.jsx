@@ -1,5 +1,3 @@
-import { MARTINPEL_LOGO_DATA_URL } from '../lib/martinpelLogo';
-
 export default function MartinpelBrand({
   compact = false,
   subtitle = 'Uniformes profissionais',
@@ -7,9 +5,10 @@ export default function MartinpelBrand({
 }) {
   return (
     <div className={`martinpel-brand martinpel-system-brand ${compact ? 'is-compact' : ''} ${className}`.trim()}>
-      <div className="martinpel-brand-emblem">
-        <div className="martinpel-brand-logo">
-          <img src={MARTINPEL_LOGO_DATA_URL} alt="Koleni Uniformes" />
+      <div className="martinpel-brand-emblem" aria-label="Koleni Uniformes">
+        <div className="koleni-wordmark" aria-hidden="true">
+          <span className="koleni-wordmark-main">koleni</span>
+          <span className="koleni-wordmark-sub">uniformes</span>
         </div>
       </div>
 
