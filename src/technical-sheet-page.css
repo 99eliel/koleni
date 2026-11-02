@@ -159,3 +159,11 @@ body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   font-size:5.2pt;
 }
 }
+
+/* Alternância de fichas individuais de um pedido com vários modelos. */
+.technical-sheet-item-nav{display:flex;align-items:center;flex-wrap:wrap;gap:8px;max-width:1080px;margin:12px auto 18px;padding:12px 14px;border:1px solid #dedede;background:#fff;border-radius:12px}
+.technical-sheet-item-nav strong{margin-right:7px;color:#333;font-size:.86rem}
+.technical-sheet-item-nav button{border:1px solid #ccc;background:#f7f7f7;color:#333;border-radius:9px;padding:9px 12px;cursor:pointer;font-size:.8rem;font-weight:700}
+.technical-sheet-item-nav button.active{background:#e33336;color:white;border-color:#c92a2d}
+.technical-sheet-item-nav button:disabled{cursor:wait;opacity:.6}
+@media print {.technical-sheet-item-nav{display:none!important}}

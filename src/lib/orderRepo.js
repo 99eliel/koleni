@@ -40,6 +40,7 @@ function lightweightDesignSnapshot(data) {
     sizeScale: data.sizeScale ?? null,
     sizeGrid: data.sizeGrid ?? {},
     quantity: data.quantity ?? null,
+    items: Array.isArray(data.items) ? data.items : [],
     notes: data.notes ?? '',
   };
 }
@@ -64,6 +65,17 @@ function sellerSummary(data, orderId, displayCode, token, expireAt, now) {
     garmentId: data.garmentId || '',
     garmentName: data.garmentName || data.garmentId || '',
     quantity: Number(data.quantity) || 0,
+    itemCount: Array.isArray(data.items) ? data.items.length : 1,
+    items: Array.isArray(data.items) ? data.items.map((item) => ({
+      id: item.id || '',
+      garmentId: item.garmentId || '',
+      garmentName: item.garmentName || '',
+      quantity: Number(item.quantity) || 0,
+      sizeScale: item.sizeScale ?? null,
+      sizeGrid: item.sizeGrid ?? {},
+      finalImages: item.finalImages ?? {},
+      finalImageUrl: item.finalImageUrl || '',
+    })) : [],
     sizeScale: data.sizeScale ?? null,
     sizeGrid: data.sizeGrid ?? {},
     status: 'pending',
@@ -80,6 +92,20 @@ function sellerSummary(data, orderId, displayCode, token, expireAt, now) {
 
 export async function createOrder(data) {
   if (!data?.sellerUid) throw new Error('Vendedor não identificado. Entre novamente no sistema.');
+  if (Array.isArray(data.items)) {
+    if (data.items.length < 1 || data.items.length > 20) {
+      throw new Error('Informe entre 1 e 20 personalizações no pedido.');
+    }
+    for (const item of data.items) {
+      if (!item.garmentId || !Number.isInteger(Number(item.quantity)) || Number(item.quantity) < 1) {
+        throw new Error('Todas as peças precisam de um modelo e quantidade válidos.');
+      }
+    }
+    const actualQuantity = data.items.reduce((sum, item) => sum + Number(item.quantity), 0);
+    if (actualQuantity !== Number(data.quantity)) {
+      throw new Error('A quantidade total precisa corresponder à soma das peças.');
+    }
+  }
 
   const now = new Date();
   const expireAt = Timestamp.fromDate(new Date(now.getTime() + (90 * 24 * 60 * 60 * 1000)));
@@ -135,6 +161,14 @@ export async function createOrder(data) {
       customerName: data.customerName || '',
       garmentName: data.garmentName || data.garmentId || '',
       quantity: Number(data.quantity) || 0,
+      items: Array.isArray(data.items) ? data.items.map((item) => ({
+        id: item.id || '',
+        garmentName: item.garmentName || '',
+        quantity: Number(item.quantity) || 0,
+        sizeGrid: item.sizeGrid ?? {},
+        finalImages: item.finalImages ?? {},
+        finalImageUrl: item.finalImageUrl || '',
+      })) : [],
       designVersion: 1,
       finalImages: data.finalImages ?? {},
       finalImageUrl: data.finalImageUrl || '',
@@ -177,6 +211,42 @@ export async function saveTechnicalSheet(orderId, technicalSheet = {}) {
 
   const clean = (value, max = 180) => String(value ?? '').trim().slice(0, max);
   const fields = technicalSheet?.fields || {};
+  const itemIndex = technicalSheet?.itemIndex;
+
+  const cleanFields = {
+        description: clean(fields.description),
+        reference: clean(fields.reference),
+        fabric: clean(fields.fabric),
+        customer: clean(fields.customer),
+        color: clean(fields.color),
+        print: clean(fields.print),
+        weight: clean(fields.weight),
+        printColor: clean(fields.printColor),
+        notes: clean(fields.notes, 500),
+  };
+  if (Number.isInteger(itemIndex) && itemIndex >= 0) {
+    const ref = doc(db, 'orders', orderId);
+    const snapshot = await getDoc(ref);
+    if (!snapshot.exists()) throw new Error('Pedido não encontrado.');
+    const order = snapshot.data();
+    const itemCount = Array.isArray(order.items) ? order.items.length : 0;
+    if (itemIndex >= itemCount) throw new Error('Peça não encontrada neste pedido.');
+    const saved = order.technicalSheet || {};
+    const itemFields = Array.from({ length: itemCount }, (_, index) =>
+      saved.items?.[index] || { fields: index === 0 ? (saved.fields || {}) : {} });
+    itemFields[itemIndex] = { fields: cleanFields, savedAt: new Date().toISOString() };
+    await updateDoc(ref, {
+      technicalSheet: {
+        ...saved,
+        fields: itemIndex === 0 ? cleanFields : (saved.fields || {}),
+        items: itemFields,
+        savedAt: new Date().toISOString(),
+      },
+      updatedAt: serverTimestamp(),
+    });
+    invalidateOrderCache();
+    return;
+  }
 
   await updateDoc(doc(db, 'orders', orderId), {
     technicalSheet: {
@@ -217,8 +287,25 @@ export async function saveOrderRevision(orderId, data) {
   const previewRef = doc(db, 'approvalPreviews', token);
   const sellerOrderRef = sellerUid ? doc(db, 'sellerOrders', sellerUid, 'orders', orderId) : null;
   const history = Array.isArray(current.designHistory) ? current.designHistory : [];
-  const nextFinalImages = data.finalImages ?? current.finalImages ?? {};
-  const finalImageUrl = data.finalImageUrl || Object.values(nextFinalImages).find(Boolean) || current.finalImageUrl || '';
+  const itemIndex = Array.isArray(current.items) ? Number(data.itemIndex ?? 0) : -1;
+  if (itemIndex >= 0 && (!Number.isInteger(itemIndex) || itemIndex >= current.items.length)) {
+    throw new Error('Peça selecionada inválida.');
+  }
+  const nextItems = itemIndex >= 0 ? current.items.map((item, index) =>
+    index === itemIndex ? {
+      ...item,
+      colorChoices: data.colorChoices ?? item.colorChoices ?? {},
+      logos: data.logos ?? item.logos ?? [],
+      texts: data.texts ?? item.texts ?? [],
+      finalImages: data.finalImages ?? item.finalImages ?? {},
+      finalImageUrl: data.finalImageUrl || Object.values(data.finalImages || {}).find(Boolean) || item.finalImageUrl || '',
+    } : item
+  ) : null;
+  const updatePrimary = itemIndex <= 0;
+  const nextFinalImages = updatePrimary ? (data.finalImages ?? current.finalImages ?? {}) : (current.finalImages ?? {});
+  const finalImageUrl = updatePrimary
+    ? (data.finalImageUrl || Object.values(nextFinalImages).find(Boolean) || current.finalImageUrl || '')
+    : (current.finalImageUrl || '');
 
   const nextHistory = [
     ...history,
@@ -235,14 +322,17 @@ export async function saveOrderRevision(orderId, data) {
       sizeGrid: current.sizeGrid ?? {},
       quantity: current.quantity ?? null,
       finalImageUrl,
+      ...(nextItems ? { items: nextItems } : {}),
+      editedItemIndex: itemIndex,
     },
   ];
 
   const batch = writeBatch(db);
   batch.update(orderRef, {
-    colorChoices: data.colorChoices ?? current.colorChoices ?? {},
-    logos: data.logos ?? current.logos ?? [],
-    texts: data.texts ?? current.texts ?? [],
+    colorChoices: updatePrimary ? (data.colorChoices ?? current.colorChoices ?? {}) : (current.colorChoices ?? {}),
+    logos: updatePrimary ? (data.logos ?? current.logos ?? []) : (current.logos ?? []),
+    texts: updatePrimary ? (data.texts ?? current.texts ?? []) : (current.texts ?? []),
+    ...(nextItems ? { items: nextItems } : {}),
     finalImages: nextFinalImages,
     finalImageUrl,
     designVersion: nextVersion,
@@ -263,6 +353,14 @@ export async function saveOrderRevision(orderId, data) {
     customerName: current.customerName || '',
     garmentName: current.garmentName || current.garmentId || '',
     quantity: Number(current.quantity) || 0,
+    ...(nextItems ? { items: nextItems.map((item) => ({
+      id: item.id || '',
+      garmentName: item.garmentName || '',
+      quantity: Number(item.quantity) || 0,
+      sizeGrid: item.sizeGrid || {},
+      finalImages: item.finalImages || {},
+      finalImageUrl: item.finalImageUrl || '',
+    })) } : {}),
     designVersion: nextVersion,
     finalImages: nextFinalImages,
     finalImageUrl,

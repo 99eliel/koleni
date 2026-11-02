@@ -6,6 +6,7 @@ import GarmentEditorCanvas from '../components/GarmentEditorCanvas';
 import MeasurementGuideEditor from '../components/MeasurementGuideEditor';
 import NewRegionDialog from '../components/NewRegionDialog';
 import OrderQuoteBuilder from '../components/OrderQuoteBuilder';
+import OrderPieces from '../components/OrderPieces';
 import MartinpelBrand from '../components/MartinpelBrand';
 import RegionSidebar from '../components/RegionSidebar';
 import { createGarmentId, getGarment, listGarments, saveGarment, setGarmentArchived } from '../lib/garmentRepo';
@@ -126,13 +127,15 @@ function OrdersView({ orders, loading, error, onRefresh }) {
                 <div><span>Cliente</span><strong>{order.customerName || 'Não informado'}</strong></div>
                 <div><span>WhatsApp</span><strong>{order.whatsapp || 'Não informado'}</strong>{whatsappLink && <a href={whatsappLink} target="_blank" rel="noreferrer">Abrir WhatsApp</a>}</div>
                 <div><span>Quantidade</span><strong>{order.quantity ?? 'Não informada (opcional)'}</strong></div>
-                <div><span>Peça</span><strong>{order.garmentName || order.garmentId || 'Não identificada'}</strong></div>
+                <div><span>Modelos</span><strong>{order.items?.length > 1 ? `${order.items.length} modelos no pedido` : order.garmentName || order.garmentId || 'Não identificada'}</strong></div>
                 <div><span>Vendedor</span><strong>{order.sellerEmail || 'Não identificado'}</strong></div>
               </div>
 
+              <OrderPieces order={order} detailed />
+
               {completed && order.completedAt && <div className="order-completed-note">Concluído em {formatOrderDate(order.completedAt)}</div>}
 
-              {finalImages.length > 0 && (
+              {(order.items?.length || 0) <= 1 && finalImages.length > 0 && (
                 <div className="order-images">
                   {finalImages.map(([imageView, url], index) => (
                     <a className="order-image" href={url} target="_blank" rel="noreferrer" key={imageView}>
@@ -143,7 +146,7 @@ function OrdersView({ orders, loading, error, onRefresh }) {
                 </div>
               )}
 
-              {vectorFiles.length > 0 && (
+              {(order.items?.length || 0) <= 1 && vectorFiles.length > 0 && (
                 <div className="order-vector-files">
                   <div className="order-vector-title"><span>Arquivos originais para produção</span><strong>{vectorFiles.length} PDF(s) vetorial(is)</strong></div>
                   <div className="order-vector-list">

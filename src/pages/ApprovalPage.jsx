@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { doc, getDoc, serverTimestamp, updateDoc, writeBatch } from 'firebase/firestore';
 import { useParams } from 'react-router-dom';
 import MartinpelBrand from '../components/MartinpelBrand';
+import OrderPieces from '../components/OrderPieces';
 import { db } from '../lib/firebase';
 import '../approval.css';
 
@@ -111,25 +112,27 @@ export default function ApprovalPage() {
         <div className="approval-heading">
           <span>Pedido {preview?.displayCode || orderId}</span>
           <h1>Confira a personalização</h1>
-          <p>Confira todas as fotos abaixo. A aprovação vale para esta versão completa do layout da peça.</p>
+          <p>Confira todas as fotos abaixo. A aprovação vale para todas as peças desta versão do pedido.</p>
         </div>
 
         <div className="approval-meta">
           <div><span>Cliente</span><strong>{preview?.customerName || 'Cliente'}</strong></div>
-          <div><span>Peça</span><strong>{preview?.garmentName || 'Uniforme personalizado'}</strong></div>
+          <div><span>Peça</span><strong>{(preview?.items || []).length > 1 ? `${preview.items.length} modelos personalizados` : preview?.garmentName || 'Uniforme personalizado'}</strong></div>
           <div><span>Quantidade</span><strong>{preview?.quantity || 0}</strong></div>
           <div><span>Versão</span><strong>V{preview?.designVersion || 1}</strong></div>
         </div>
 
-        <div className={`approval-art-grid ${artworks.length === 1 ? 'is-single' : ''}`}>
+        <OrderPieces order={preview} detailed />
+        {(preview?.items?.length || 0) <= 1 && <div className={`approval-art-grid ${artworks.length === 1 ? 'is-single' : ''}`}>
           {artworks.length > 0 ? artworks.map(([imageView, url], index) => (
             <figure className="approval-art" key={imageView}>
               <img src={url} alt={`Arte para aprovação - ${VIEW_LABELS[imageView] || `Foto ${index + 1}`}`} />
               <figcaption>{VIEW_LABELS[imageView] || `Foto ${index + 1}`}</figcaption>
             </figure>
           )) : <div className="approval-art"><div>Arte indisponível</div></div>}
-        </div>
+        </div>}
 
+        {(preview?.items?.length || 0) <= 1 ? null : <p className="approval-multi-note">Ao aprovar, você confirma todas as personalizações acima. Para solicitar mudanças, indique a peça e a foto na observação.</p>}
         {decision ? (
           <div className={`approval-result ${decision === 'approved' ? 'approved' : 'changes'}`}>
             <strong>{decision === 'approved' ? '✓ Arte aprovada' : '↺ Alteração solicitada'}</strong>

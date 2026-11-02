@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import BackgroundRemovalDialog from '../components/BackgroundRemovalDialog';
 import CustomerStage from '../components/CustomerStage';
+import PieceCartCheckout from '../components/PieceCartCheckout';
 import LogoManager from '../components/LogoManager';
 import LogoColorEditor from '../components/LogoColorEditor';
 import MartinpelBrand from '../components/MartinpelBrand';
@@ -11,6 +12,7 @@ import { getCustomerByWhatsapp, saveCustomerOrderSnapshot } from '../lib/custome
 import { getGarment, listGarments } from '../lib/garmentRepo';
 import { backgroundRemovedFile } from '../lib/localBackgroundRemoval';
 import { createOrder } from '../lib/orderRepo';
+import { addPieceToCart, readPieceCart } from '../lib/multiPieceCart';
 import { renderPdfLogoPreviews } from '../lib/pdfLogoPreview';
 import { createEmptySizeGrid, getSizeScaleLabel, getSizeScaleLabels, normalizeSizeScale } from '../lib/sizeScales';
 import { uploadClientLogo, uploadClientLogoOriginalPdf, uploadFinalRender } from '../lib/storageImages';
@@ -82,6 +84,7 @@ function Catalog({ staffUser, isAdmin, logout }) {
         <div className="catalog-hero-badge"><strong>Atendimento assistido</strong><span>Venda • Layout • Produção</span></div>
       </header>
       {error && <div className="notice notice-error">{error}</div>}
+      <PieceCartCheckout staffUser={staffUser} />
       <section className="catalog-grid">
         {items.map((item) => {
           const thumb = Object.values(item.images || {}).find(Boolean);
@@ -136,6 +139,7 @@ export default function CustomizerPage({ staffUser, isAdmin = false, logout }) {
   const [message, setMessage] = useState('');
   const [orderId, setOrderId] = useState('');
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [checkoutMode, setCheckoutMode] = useState('single');
   const [customerName, setCustomerName] = useState('');
   const [customerWhatsapp, setCustomerWhatsapp] = useState('');
   const [quantity, setQuantity] = useState('');
@@ -595,7 +599,8 @@ export default function CustomizerPage({ staffUser, isAdmin = false, logout }) {
     }
   }
 
-  function openCheckout() {
+  function openCheckout(mode = 'single') {
+    setCheckoutMode(mode);
     setError('');
     setMessage('');
     setOrderId('');
@@ -613,8 +618,8 @@ export default function CustomizerPage({ staffUser, isAdmin = false, logout }) {
     event.preventDefault();
     const cleanName = customerName.trim();
     const cleanWhatsapp = customerWhatsapp.trim();
-    if (!cleanName) return setCheckoutError('Digite o nome do cliente.');
-    if (!cleanWhatsapp) return setCheckoutError('Digite o WhatsApp do cliente.');
+    if (checkoutMode === 'single' && !cleanName) return setCheckoutError('Digite o nome do cliente.');
+    if (checkoutMode === 'single' && !cleanWhatsapp) return setCheckoutError('Digite o WhatsApp do cliente.');
     const manualQuantity = Number(quantity);
     const parsedQuantity = sizeTotal > 0 ? sizeTotal : manualQuantity;
     if (!Number.isInteger(parsedQuantity) || parsedQuantity < 1) {
@@ -639,6 +644,24 @@ export default function CustomizerPage({ staffUser, isAdmin = false, logout }) {
       const compactGrid = cleanSizeGrid(sizeGrid);
       const normalizedSizeScale = normalizeSizeScale(garment.sizeScale);
       const firstFinalImage = Object.values(finalImages).find(Boolean) || '';
+      if (checkoutMode === 'cart') {
+        addPieceToCart(staffUser?.uid, {
+          garmentId,
+          garmentName: garment.name,
+          quantity: parsedQuantity,
+          sizeScale: normalizedSizeScale,
+          sizeGrid: compactGrid,
+          colorChoices: effectiveColors,
+          logos,
+          texts,
+          finalImages,
+          finalImageUrl: firstFinalImage,
+        });
+        setCheckoutOpen(false);
+        setMessage('Peça adicionada ao pedido. Escolha a próxima no catálogo.');
+        navigate('/vendedor');
+        return;
+      }
       const id = await createOrder({
         garmentId,
         garmentName: garment.name,
@@ -697,7 +720,7 @@ export default function CustomizerPage({ staffUser, isAdmin = false, logout }) {
         <MartinpelBrand compact subtitle="Atendimento de venda" />
         <div className="seller-global-actions">
           <div className="seller-session compact"><span>Vendedor</span><strong>{staffUser?.email || 'Equipe Koleni'}</strong></div>
-          <Link className="button button-light back-to-catalog" to="/">← Catálogo</Link>
+          <Link className="button button-light back-to-catalog" to="/vendedor">← Catálogo {readPieceCart(staffUser?.uid).length ? `(${readPieceCart(staffUser?.uid).length} no pedido)` : ''}</Link>
           <button className="button admin-logout-button" type="button" onClick={logout}>Sair</button>
         </div>
       </div>
@@ -906,7 +929,9 @@ export default function CustomizerPage({ staffUser, isAdmin = false, logout }) {
             {preflight.map(([label, ok]) => <div className={ok ? 'ok' : ''} key={label}><span>{ok ? '✓' : '!'}</span><strong>{label}</strong></div>)}
           </div>
 
-          <button type="button" className="button button-success finalize-button" disabled={busy} onClick={openCheckout}>{busy ? 'Processando…' : 'Registrar pedido'}</button>
+          <button type="button" className="button button-success finalize-button" disabled={busy} onClick={() => openCheckout('single')}>{busy ? 'Processando…' : 'Registrar pedido desta peça'}</button>
+          <button type="button" className="button button-primary full-width" disabled={busy} onClick={() => openCheckout('cart')}>+ Adicionar ao pedido com várias peças</button>
+          <p className="download-help">Adicione uma peça, volte ao catálogo e personalize as próximas. Finalize todas juntas em um único pedido.</p>
           <button type="button" className="button button-secondary full-width download-final-button" disabled={busy} onClick={downloadCurrentImage}>Baixar imagem pronta · {VIEW_LABELS[view]}</button>
           {views.length > 1 && <p className="download-help">Troque entre as fotos para baixar cada layout separadamente.</p>}
         </aside>
@@ -917,8 +942,9 @@ export default function CustomizerPage({ staffUser, isAdmin = false, logout }) {
       {checkoutOpen && (
         <div className="checkout-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeCheckout(); }}>
           <form className="panel checkout-card checkout-card-wide" onSubmit={handleCheckoutSubmit}>
-            <div><p className="eyebrow">Registrar pedido</p><h2>Cliente e grade de produção</h2><p className="muted checkout-intro">Localize um cliente recorrente pelo WhatsApp ou registre um novo atendimento.</p></div>
+            <div><p className="eyebrow">{checkoutMode === 'cart' ? 'Adicionar ao pedido' : 'Registrar pedido'}</p><h2>{checkoutMode === 'cart' ? `Quantidade e tamanhos · ${garment.name}` : 'Cliente e grade de produção'}</h2><p className="muted checkout-intro">{checkoutMode === 'cart' ? 'Esta personalização será guardada no pedido em montagem. Você informa o cliente uma única vez ao finalizar no catálogo.' : 'Localize um cliente recorrente pelo WhatsApp ou registre um novo atendimento.'}</p></div>
 
+            {checkoutMode === 'single' && (<>
             <div className="customer-lookup-row">
               <label>WhatsApp<input type="tel" value={customerWhatsapp} onChange={(event) => { setCustomerWhatsapp(event.target.value); setCustomerRecord(null); }} placeholder="Ex.: (62) 99999-9999" autoComplete="tel" disabled={busy} /></label>
               <button type="button" className="button button-secondary" onClick={lookupCustomer} disabled={busy || customerLookupBusy}>{customerLookupBusy ? 'Buscando…' : 'Buscar cadastro'}</button>
@@ -933,6 +959,8 @@ export default function CustomizerPage({ staffUser, isAdmin = false, logout }) {
 
             <label>Nome do cliente<input autoFocus value={customerName} onChange={(event) => setCustomerName(event.target.value)} placeholder="Nome / empresa" autoComplete="name" disabled={busy} /></label>
 
+            </>)}
+
             <div className="size-grid-editor">
               <div className="size-grid-title"><strong>Grade de tamanhos</strong><span>{getSizeScaleLabel(garment.sizeScale)} · Total pela grade: {sizeTotal}</span></div>
               <div className="size-grid-inputs">
@@ -943,7 +971,7 @@ export default function CustomizerPage({ staffUser, isAdmin = false, logout }) {
             <label>Quantidade total <span className="optional-label">(use apenas se não preencher a grade)</span><input type="number" min="1" step="1" value={quantity} onChange={(event) => setQuantity(event.target.value)} placeholder="Ex.: 20" disabled={busy || sizeTotal > 0} /></label>
 
             {checkoutError && <div className="checkout-error">{checkoutError}</div>}
-            <div className="checkout-actions"><button type="button" className="button button-secondary" onClick={closeCheckout} disabled={busy}>Cancelar</button><button type="submit" className="button button-success" disabled={busy}>{busy ? 'Registrando…' : `Confirmar pedido · ${sizeTotal || Number(quantity) || 0} peça(s)`}</button></div>
+            <div className="checkout-actions"><button type="button" className="button button-secondary" onClick={closeCheckout} disabled={busy}>Cancelar</button><button type="submit" className="button button-success" disabled={busy}>{busy ? 'Processando…' : checkoutMode === 'cart' ? `Adicionar ${sizeTotal || Number(quantity) || 0} peça(s) ao pedido` : `Confirmar pedido · ${sizeTotal || Number(quantity) || 0} peça(s)`}</button></div>
           </form>
         </div>
       )}

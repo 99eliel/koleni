@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import StaffAuth from '../components/StaffAuth';
 import MartinpelBrand from '../components/MartinpelBrand';
+import OrderPieces from '../components/OrderPieces';
 import { listOrders, setOrderStatus } from '../lib/orderRepo';
 
 const STAGES = [
@@ -105,11 +106,12 @@ function PipelineBoard({ logout, isAdmin, profile }) {
                   <article className="pipeline-card" key={order.id}>
                     <div className="pipeline-card-code">{order.displayCode || order.id}</div>
                     <h3>{order.customerName || 'Cliente não informado'}</h3>
-                    <p>{order.garmentName || order.garmentId || 'Peça não identificada'}</p>
+                    <p>{order.items?.length > 1 ? `${order.items.length} modelos personalizados` : order.garmentName || order.garmentId || 'Peça não identificada'}</p>
                     <div className="pipeline-card-meta">
                       <span>{order.quantity || 0} peça(s)</span>
                       <span>{formatDate(order.createdAt)}</span>
                     </div>
+                    <OrderPieces order={order} />
                     <small>{order.sellerEmail || 'Vendedor não identificado'}</small>
                     <div className="pipeline-card-actions">
                       <button type="button" disabled={working || stageIndex === 0} onClick={() => move(order, -1)}>←</button>

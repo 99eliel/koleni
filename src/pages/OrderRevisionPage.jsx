@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import CustomerStage from '../components/CustomerStage';
 import MartinpelBrand from '../components/MartinpelBrand';
 import PdfLogoLibrary from '../components/PdfLogoLibrary';
@@ -24,6 +24,9 @@ function approvalUrl(orderId, token) {
 
 export default function OrderRevisionPage({ user, isAdmin = false, logout }) {
   const { orderId } = useParams();
+  const [searchParams] = useSearchParams();
+  const requestedItem = Number(searchParams.get('item') || 0);
+  const itemIndex = Number.isInteger(requestedItem) && requestedItem >= 0 ? requestedItem : 0;
   const stageRef = useRef(null);
   const fileInputRef = useRef(null);
   const restoredRef = useRef(false);
@@ -127,22 +130,27 @@ export default function OrderRevisionPage({ user, isAdmin = false, logout }) {
   useEffect(() => {
     let active = true;
     setLoading(true);
+    restoredRef.current = false;
+    setOrder(null);
+    setGarment(null);
     getOrderForRevision(orderId)
       .then(async (orderData) => {
         if (!active) return;
         if (!orderData) throw new Error('Pedido não encontrado ou sem permissão para revisão.');
-        const garmentData = await getGarment(orderData.garmentId);
+        const piece = orderData.items?.[itemIndex] || (itemIndex === 0 ? orderData : null);
+        if (!piece) throw new Error('Este modelo não está no pedido.');
+        const garmentData = await getGarment(piece.garmentId);
         if (!garmentData) throw new Error('A peça original deste pedido não está mais disponível no catálogo.');
         if (!active) return;
         setOrder(orderData);
         setGarment(garmentData);
-        setColorChoices(orderData.colorChoices || {});
+        setColorChoices(piece.colorChoices || {});
         setView(availableViews(garmentData)[0] || 'front');
       })
       .catch((err) => active && setError(err.message))
       .finally(() => active && setLoading(false));
     return () => { active = false; };
-  }, [orderId]);
+  }, [orderId, itemIndex]);
 
   useEffect(() => {
     if (!order || !garment || restoredRef.current || !stageRef.current) return;
@@ -150,14 +158,15 @@ export default function OrderRevisionPage({ user, isAdmin = false, logout }) {
     let cancelled = false;
     (async () => {
       try {
-        await stageRef.current.restoreDesignState({ logos: order.logos || [], texts: order.texts || [] }, { resetHistory: true });
+        const piece = order.items?.[itemIndex] || order;
+        await stageRef.current.restoreDesignState({ logos: piece.logos || [], texts: piece.texts || [] }, { resetHistory: true });
         if (!cancelled) resetHistory();
       } catch (err) {
         if (!cancelled) setError(`Não foi possível restaurar toda a versão anterior: ${err.message}`);
       }
     })();
     return () => { cancelled = true; };
-  }, [order, garment]);
+  }, [order, garment, itemIndex]);
 
   function selectRegion(region) {
     if (!region.locked) setSelectedRegionId(region.id);
@@ -277,11 +286,12 @@ export default function OrderRevisionPage({ user, isAdmin = false, logout }) {
       const finalImages = {};
       for (const targetView of availableViews(garment)) {
         const blob = await stageRef.current?.exportView(targetView);
-        if (blob) finalImages[targetView] = await uploadFinalRender(blob, user.uid, `${targetView}-${order.garmentId}-v${(order.designVersion || 1) + 1}`);
+        if (blob) finalImages[targetView] = await uploadFinalRender(blob, user.uid, `${targetView}-${garment.id || order.garmentId}-v${(order.designVersion || 1) + 1}`);
       }
       const effectiveColors = Object.fromEntries((garment.regions ?? []).map((region) => [region.id, colorChoices[region.id] ?? region.defaultColor]));
       const firstFinalImage = Object.values(finalImages).find(Boolean) || '';
       const result = await saveOrderRevision(order.id, {
+        itemIndex,
         colorChoices: effectiveColors,
         logos,
         texts,
@@ -291,11 +301,8 @@ export default function OrderRevisionPage({ user, isAdmin = false, logout }) {
       setNewApproval(result);
       setOrder((current) => ({
         ...current,
-        colorChoices: effectiveColors,
-        logos,
-        texts,
-        finalImages,
-        finalImageUrl: firstFinalImage,
+        ...(itemIndex === 0 ? { colorChoices: effectiveColors, logos, texts, finalImages, finalImageUrl: firstFinalImage } : {}),
+        ...(current.items?.length ? { items: current.items.map((piece, index) => index === itemIndex ? { ...piece, colorChoices: effectiveColors, logos, texts, finalImages, finalImageUrl: firstFinalImage } : piece) } : {}),
         designVersion: result.designVersion,
         approvalToken: result.approvalToken,
         approvalStatus: 'pending',
@@ -344,6 +351,10 @@ export default function OrderRevisionPage({ user, isAdmin = false, logout }) {
         </div>
       </div>
 
+      {order.items?.length > 1 && !newApproval && <nav className="revision-piece-nav" aria-label="Escolher modelo para revisão">
+        <strong>Qual peça deseja corrigir?</strong>
+        {order.items.map((item, index) => <Link key={item.id || index} className={index === itemIndex ? 'active' : ''} to={`/revisar/${order.id}?item=${index}`}>{index + 1}. {item.garmentName}</Link>)}
+      </nav>}
       <section className="revision-request panel">
         <div>
           <p className="eyebrow">Solicitação do cliente · V{order.designVersion || 1}</p>

@@ -51,6 +51,8 @@ export default function TechnicalSheetPage({ isAdmin = false, logout }) {
   const { orderId } = useParams();
   const [order, setOrder] = useState(null);
   const [garment, setGarment] = useState(null);
+  const [selectedItemIndex, setSelectedItemIndex] = useState(0);
+  const [changingItem, setChangingItem] = useState(false);
   const [fields, setFields] = useState(EMPTY_FIELDS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -71,7 +73,7 @@ export default function TechnicalSheetPage({ isAdmin = false, logout }) {
         setGarment(garmentData);
         setFields({
           ...EMPTY_FIELDS,
-          ...(orderData.technicalSheet?.fields || {}),
+          ...(orderData.technicalSheet?.items?.[0]?.fields || orderData.technicalSheet?.fields || {}),
         });
       })
       .catch((err) => active && setError(err.message || 'Não foi possível abrir a ficha técnica.'))
@@ -80,17 +82,39 @@ export default function TechnicalSheetPage({ isAdmin = false, logout }) {
     return () => { active = false; };
   }, [orderId]);
 
-  const guide = useMemo(() => normalizedGuide(garment, order), [garment, order]);
+  const pieces = Array.isArray(order?.items) ? order.items : [];
+  const activePiece = pieces[selectedItemIndex] || order;
+  const guide = useMemo(() => normalizedGuide(garment, activePiece), [garment, activePiece]);
+
+  async function switchPiece(index) {
+    if (!order || index === selectedItemIndex || changingItem || saving) return;
+    setChangingItem(true);
+    setError('');
+    try {
+      const ok = await save({ silent: true });
+      if (!ok) return;
+      const next = pieces[index];
+      const nextGarment = await getGarment(next.garmentId, { includeArchived: true });
+      setSelectedItemIndex(index);
+      setGarment(nextGarment);
+      setFields({ ...EMPTY_FIELDS, ...(order.technicalSheet?.items?.[index]?.fields || {}) });
+      setMessage(`Peça ${index + 1} de ${pieces.length}: ${next.garmentName}`);
+    } catch (err) {
+      setError(err.message || 'Não foi possível abrir a ficha desta peça.');
+    } finally {
+      setChangingItem(false);
+    }
+  }
   const drawings = useMemo(() => {
     if (!order) return [];
-    const entries = Object.entries(order.finalImages || {}).filter(([, url]) => Boolean(url));
-    if (!entries.length && order.finalImageUrl) entries.push(['final', order.finalImageUrl]);
+    const entries = Object.entries(activePiece?.finalImages || {}).filter(([, url]) => Boolean(url));
+    if (!entries.length && activePiece?.finalImageUrl) entries.push(['final', activePiece.finalImageUrl]);
     return entries;
-  }, [order]);
+  }, [activePiece]);
 
   const logoPreviews = useMemo(
-    () => (order?.logos || []).map((logo) => ({ ...logo, preview: safeImageSource(logo) })).filter((logo) => logo.preview),
-    [order],
+    () => (activePiece?.logos || []).map((logo) => ({ ...logo, preview: safeImageSource(logo) })).filter((logo) => logo.preview),
+    [activePiece],
   );
 
   function updateField(key, value) {
@@ -103,11 +127,15 @@ export default function TechnicalSheetPage({ isAdmin = false, logout }) {
     setSaving(true);
     setError('');
     try {
-      await saveTechnicalSheet(orderId, { fields });
-      setOrder((current) => current ? {
-        ...current,
-        technicalSheet: { fields: { ...fields }, savedAt: new Date().toISOString() },
-      } : current);
+      await saveTechnicalSheet(orderId, { fields, ...(pieces.length > 1 ? { itemIndex: selectedItemIndex } : {}) });
+      setOrder((current) => {
+        if (!current) return current;
+        const original = current.technicalSheet || {};
+        if (pieces.length <= 1) return { ...current, technicalSheet: { fields: { ...fields }, savedAt: new Date().toISOString() } };
+        const nextItems = Array.from({ length: pieces.length }, (_, index) => original.items?.[index] || { fields: index === 0 ? (original.fields || {}) : {} });
+        nextItems[selectedItemIndex] = { fields: { ...fields }, savedAt: new Date().toISOString() };
+        return { ...current, technicalSheet: { ...original, fields: selectedItemIndex === 0 ? { ...fields } : (original.fields || {}), items: nextItems, savedAt: new Date().toISOString() } };
+      });
       if (!silent) setMessage('Ficha técnica salva no pedido.');
       return true;
     } catch (err) {
@@ -144,7 +172,7 @@ export default function TechnicalSheetPage({ isAdmin = false, logout }) {
         <div>
           <span>Pedido {order.displayCode || order.id}</span>
           <strong>Ficha Técnica</strong>
-          <small>Preencha o cabeçalho, confira a arte e salve antes de imprimir.</small>
+          <small>{pieces.length > 1 ? `Pedido com ${pieces.length} personalizações. Selecione e imprima a ficha de cada modelo.` : 'Preencha o cabeçalho, confira a arte e salve antes de imprimir.'}</small>
         </div>
         <div className="technical-sheet-toolbar-actions">
           <Link className="button button-secondary" to={isAdmin ? '/admin' : '/meus-pedidos'}>← Voltar</Link>
@@ -164,8 +192,14 @@ export default function TechnicalSheetPage({ isAdmin = false, logout }) {
         </div>
       )}
 
+      {pieces.length > 1 && <div className="technical-sheet-item-nav no-print">
+        <strong>Peças do pedido:</strong>
+        {pieces.map((piece, index) => <button key={piece.id || index} type="button" className={selectedItemIndex === index ? 'active' : ''} disabled={changingItem || saving} onClick={() => switchPiece(index)}>
+          {index + 1}. {piece.garmentName} · {piece.quantity} un.
+        </button>)}
+      </div>}
       <article className="technical-sheet-paper">
-        <div className="technical-sheet-titlebar">FICHA TÉCNICA</div>
+        <div className="technical-sheet-titlebar">FICHA TÉCNICA {pieces.length > 1 ? `· MODELO ${selectedItemIndex + 1}/${pieces.length} — ${activePiece?.garmentName || ''}` : ''}</div>
 
         <section className="technical-sheet-header-grid">
           <div className="technical-sheet-logo">
@@ -180,7 +214,7 @@ export default function TechnicalSheetPage({ isAdmin = false, logout }) {
                   <input
                     value={fields.description}
                     onChange={(event) => updateField('description', event.target.value)}
-                    placeholder={order.garmentName || 'Preencher'}
+                    placeholder={activePiece?.garmentName || 'Preencher'}
                   />
                 </td>
               </tr>
@@ -269,7 +303,7 @@ export default function TechnicalSheetPage({ isAdmin = false, logout }) {
 
         <footer className="technical-sheet-footer">
           <span>Pedido: {order.displayCode || order.id}</span>
-          <span>Quantidade: {Number(order.quantity) || 0}</span>
+          <span>Quantidade: {Number(activePiece?.quantity) || 0}{pieces.length > 1 ? ` · Total do pedido: ${Number(order.quantity) || 0}` : ''}</span>
           <span>Versão: V{Number(order.designVersion) || 1}</span>
         </footer>
       </article>

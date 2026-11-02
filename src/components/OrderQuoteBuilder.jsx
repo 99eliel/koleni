@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { MARTINPEL_LOGO_DATA_URL } from '../lib/martinpelLogo';
 import { saveOrderQuote } from '../lib/orderRepo';
 import OrderOperationsPanel from './OrderOperationsPanel';
+import MultiPieceQuoteBuilder from './MultiPieceQuoteBuilder';
+import '../multi-piece-quote.css';
 
 function money(value) {
   const number = Number(value) || 0;
@@ -25,7 +27,7 @@ function quoteImage(order) {
     || '';
 }
 
-export default function OrderQuoteBuilder({ order, disabled, onSaved }) {
+function SinglePieceQuoteBuilder({ order, disabled, onSaved }) {
   const [open, setOpen] = useState(Boolean(order.quote));
   const [unitPrice, setUnitPrice] = useState(order.quote?.unitPrice ? String(order.quote.unitPrice) : '');
   const [estimatedTime, setEstimatedTime] = useState(order.quote?.estimatedTime ?? '');
@@ -112,4 +114,10 @@ export default function OrderQuoteBuilder({ order, disabled, onSaved }) {
       <OrderOperationsPanel order={order} disabled={disabled || busy} onSaved={onSaved} />
     </>
   );
+}
+
+export default function OrderQuoteBuilder(props) {
+  return (props.order?.items?.length || 0) > 1
+    ? <MultiPieceQuoteBuilder {...props} />
+    : <SinglePieceQuoteBuilder {...props} />;
 }

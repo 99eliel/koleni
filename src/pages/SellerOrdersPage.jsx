@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import MartinpelBrand from '../components/MartinpelBrand';
+import OrderPieces from '../components/OrderPieces';
 import { listSellerDetailedOrders } from '../lib/orderRepo';
 
 const STATUS_LABELS = {
@@ -133,10 +134,12 @@ export default function SellerOrdersPage({ user, isAdmin = false, logout }) {
                   {whatsappLink && <a href={whatsappLink} target="_blank" rel="noreferrer">Abrir WhatsApp</a>}
                 </div>
                 <div><span>Quantidade</span><strong>{order.quantity || 0}</strong></div>
-                <div><span>Peça</span><strong>{order.garmentName || order.garmentId || 'Peça não identificada'}</strong></div>
+                <div><span>Modelos</span><strong>{order.items?.length > 1 ? `${order.items.length} modelos no pedido` : order.garmentName || order.garmentId || 'Peça não identificada'}</strong></div>
                 <div><span>Vendedor</span><strong>{order.sellerEmail || user.email || 'Não identificado'}</strong></div>
                 <div><span>Versão</span><strong>V{order.designVersion || 1}</strong></div>
               </div>
+
+              <OrderPieces order={order} detailed />
 
               <div className="seller-order-detail-status">
                 <div>
@@ -151,7 +154,7 @@ export default function SellerOrdersPage({ user, isAdmin = false, logout }) {
                   <div>
                     <span>Orçamento</span>
                     <strong>{formatMoney(quote.total || (Number(quote.unitPrice) * Number(order.quantity)))}</strong>
-                    <small>{quote.unitPrice ? `${formatMoney(quote.unitPrice)} por peça` : ''}{quote.estimatedTime ? ` · Prazo: ${quote.estimatedTime}` : ''}</small>
+                    <small>{quote.items?.length ? `${quote.items.length} preços unitários` : quote.unitPrice ? `${formatMoney(quote.unitPrice)} por peça` : ''}{quote.estimatedTime ? ` · Prazo: ${quote.estimatedTime}` : ''}</small>
                   </div>
                 )}
               </div>
@@ -167,7 +170,7 @@ export default function SellerOrdersPage({ user, isAdmin = false, logout }) {
                 </div>
               )}
 
-              {finalImages.length > 0 && (
+              {(order.items?.length || 0) <= 1 && finalImages.length > 0 && (
                 <details className="seller-order-collapse">
                   <summary>
                     <span>Artes finais</span>
@@ -185,7 +188,7 @@ export default function SellerOrdersPage({ user, isAdmin = false, logout }) {
                 </details>
               )}
 
-              {vectorFiles.length > 0 && (
+              {(order.items?.length || 0) <= 1 && vectorFiles.length > 0 && (
                 <details className="seller-order-collapse">
                   <summary>
                     <span>Arquivos vetoriais</span>
@@ -210,9 +213,14 @@ export default function SellerOrdersPage({ user, isAdmin = false, logout }) {
                 <div className="seller-change-note">
                   <span>O que o cliente pediu</span>
                   <strong>{order.approvalNote || 'Alteração solicitada sem observação.'}</strong>
-                  <Link className="button button-primary" to={`/revisar/${order.orderId || order.id}`}>
+                  {order.items?.length > 1 ? <div className="seller-revision-pieces">
+                    <small>Selecione o modelo que precisa ser corrigido:</small>
+                    {order.items.map((item, index) => <Link className="button button-secondary" key={item.id || index} to={`/revisar/${order.orderId || order.id}?item=${index}`}>
+                      {index + 1}. {item.garmentName} — Revisar
+                    </Link>)}
+                  </div> : <Link className="button button-primary" to={`/revisar/${order.orderId || order.id}`}>
                     Revisar arte · criar V{(order.designVersion || 1) + 1}
-                  </Link>
+                  </Link>}
                 </div>
               )}
 

@@ -121,6 +121,7 @@ service cloud.firestore {
           'colorChoices',
           'logos',
           'texts',
+          'items',
           'finalImages',
           'finalImageUrl',
           'designVersion',
