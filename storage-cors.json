@@ -4,10 +4,19 @@
       "https://99eliel.github.io",
       "https://personalizakoleni.web.app",
       "https://personalizakoleni.firebaseapp.com",
+      "https://www.koleni.com.br",
+      "https://koleni.com.br",
       "http://localhost:5173"
     ],
-    "method": ["GET", "HEAD"],
-    "responseHeader": ["Content-Type", "Content-Length", "ETag"],
+    "method": [
+      "GET",
+      "HEAD"
+    ],
+    "responseHeader": [
+      "Content-Type",
+      "Content-Length",
+      "ETag"
+    ],
     "maxAgeSeconds": 3600
   }
 ]

@@ -8,6 +8,8 @@ Código clonado da versão mais recente de `99eliel/cor`, adaptado à marca Kole
 - O projeto Firebase CLI está configurado em `.firebaserc`.
 - A cópia contempla o código e as regras, **não os documentos do Firestore, usuários do Authentication ou arquivos do Storage**.
 
+**Exportação das imagens:** o bucket precisa de CORS configurado no Google Cloud; veja [CONFIGURAR_CORS_KOLENI.md](./CONFIGURAR_CORS_KOLENI.md). O arquivo JSON no repositório não aplica a configuração automaticamente.
+
 ## Preparação obrigatória do Firebase
 1. No projeto Firebase `personalizakoleni`, criar Firestore e Storage, caso ainda não estejam ativos.
 2. Em Authentication > Método de login, habilitar E-mail/Senha.

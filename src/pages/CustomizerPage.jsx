@@ -637,7 +637,12 @@ export default function CustomizerPage({ staffUser, isAdmin = false, logout }) {
       setClientUser(user);
       const finalImages = {};
       for (const targetView of availableViews(garment)) {
-        const blob = await stageRef.current?.exportView(targetView);
+        let blob;
+        try {
+          blob = await stageRef.current?.exportView(targetView);
+        } catch (imageError) {
+          throw new Error(`Erro ao exportar ${VIEW_LABELS[targetView] || targetView} da peça "${garment.name}": ${imageError.message}`);
+        }
         if (blob) finalImages[targetView] = await uploadFinalRender(blob, user.uid, `${targetView}-${garmentId}`);
       }
       const effectiveColors = Object.fromEntries((garment.regions ?? []).map((region) => [region.id, colorChoices[region.id] ?? region.defaultColor]));
@@ -970,7 +975,14 @@ export default function CustomizerPage({ staffUser, isAdmin = false, logout }) {
 
             <label>Quantidade total <span className="optional-label">(use apenas se não preencher a grade)</span><input type="number" min="1" step="1" value={quantity} onChange={(event) => setQuantity(event.target.value)} placeholder="Ex.: 20" disabled={busy || sizeTotal > 0} /></label>
 
-            {checkoutError && <div className="checkout-error">{checkoutError}</div>}
+            {checkoutError && <div className="checkout-error">
+              {checkoutError}
+              {/cors|exporta|origem:/i.test(checkoutError) && <a
+                href="https://console.cloud.google.com/storage/browser/personalizakoleni.firebasestorage.app?project=personalizakoleni"
+                target="_blank" rel="noreferrer"
+                style={{ display: 'block', marginTop: 10, color: 'inherit', textDecoration: 'underline', fontWeight: 800 }}
+              >Abrir configuração do Storage da Koleni ↗</a>}
+            </div>}
             <div className="checkout-actions"><button type="button" className="button button-secondary" onClick={closeCheckout} disabled={busy}>Cancelar</button><button type="submit" className="button button-success" disabled={busy}>{busy ? 'Processando…' : checkoutMode === 'cart' ? `Adicionar ${sizeTotal || Number(quantity) || 0} peça(s) ao pedido` : `Confirmar pedido · ${sizeTotal || Number(quantity) || 0} peça(s)`}</button></div>
           </form>
         </div>

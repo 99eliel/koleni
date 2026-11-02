@@ -7,12 +7,36 @@ import { recolorLogoSource } from '../lib/logoAppearance';
 const DEFAULT_COLOR_TUNING = Object.freeze({ opacity: 82, saturation: 88, brightness: 96 });
 const FULL_COLOR_TUNING = Object.freeze({ opacity: 100, saturation: 100, brightness: 100 });
 
-function loadImage(url) {
+function imageOrigin(url) {
+  try {
+    const parsed = new URL(url, window.location.href);
+    if (parsed.protocol === 'blob:' || parsed.protocol === 'data:') return 'imagem local';
+    const firebaseBucket = parsed.pathname.match(/^\/v0\/b\/([^/]+)\/o(?:\/|$)/)?.[1];
+    if (firebaseBucket) return `bucket ${decodeURIComponent(firebaseBucket)} (${parsed.origin})`;
+    if (parsed.hostname === 'storage.googleapis.com') {
+      const bucket = parsed.pathname.split('/').filter(Boolean)[0];
+      if (bucket) return `bucket ${decodeURIComponent(bucket)} (${parsed.origin})`;
+    }
+    return parsed.origin;
+  } catch {
+    return 'origem desconhecida';
+  }
+}
+
+// A exportação em canvas precisa de imagens autorizadas por CORS, mesmo
+// quando a prévia consegue mostrar imagens remotas sem essa autorização.
+function loadImage(url, label = 'imagem') {
   return new Promise((resolve, reject) => {
     const image = new Image();
     image.crossOrigin = 'anonymous';
-    image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error('Não foi possível carregar a imagem com segurança para exportação. Verifique o CORS do Cloud Storage.'));
+    image.onload = () => {
+      image.__koleniCorsSafe = true;
+      resolve(image);
+    };
+    image.onerror = () => reject(new Error(
+      `Não foi possível carregar ${label} para exportação (origem: ${imageOrigin(url)}). ` +
+      'Verifique se a imagem existe e se o bucket que a hospeda permite CORS para https://99eliel.github.io.'
+    ));
     image.src = url;
   });
 }
@@ -20,8 +44,12 @@ function loadImage(url) {
 function loadDisplayImage(url) {
   return loadImage(url).catch(() => new Promise((resolve, reject) => {
     const image = new Image();
-    image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error('Não foi possível carregar a imagem da peça.'));
+    image.onload = () => {
+      // Apenas pré-visualização. O canvas com esta imagem não pode ser exportado.
+      image.__koleniCorsSafe = false;
+      resolve(image);
+    };
+    image.onerror = () => reject(new Error(`Não foi possível carregar a imagem da peça (${imageOrigin(url)}).`));
     image.src = url;
   }));
 }
@@ -649,7 +677,7 @@ const CustomerStage = forwardRef(function CustomerStage({
     async exportView(targetView) {
       const url = garment.images?.[targetView];
       if (!url) return null;
-      const image = await loadImage(url);
+      const image = await loadImage(url, `foto ${targetView} do uniforme`);
       const { width, height } = dimensionsFor(image);
       const result = document.createElement('canvas');
       result.width = width;
@@ -660,6 +688,12 @@ const CustomerStage = forwardRef(function CustomerStage({
       for (const object of designObjects().filter((item) => item.designView === targetView)) {
         if (object.logoId) {
           const element = object.getElement();
+          if (element?.__koleniCorsSafe === false) {
+            throw new Error(
+              `A logo "${object.sourceName || 'sem nome'}" está hospedada em ${imageOrigin(object.processedUrl || object.storageUrl || object.sourceUrl)} ` +
+              'e foi carregada somente para visualização. Para exportar, configure CORS no bucket dessa imagem.'
+            );
+          }
           const drawWidth = object.normScale * width;
           const elementWidth = element?.naturalWidth || element?.width || 1;
           const elementHeight = element?.naturalHeight || element?.height || 1;
@@ -708,7 +742,7 @@ const CustomerStage = forwardRef(function CustomerStage({
             else reject(new Error('Não foi possível gerar a imagem final.'));
           }, 'image/png', 0.96);
         } catch (error) {
-          reject(new Error(`A exportação foi bloqueada por uma imagem sem permissão CORS. ${error?.message || ''}`.trim()));
+          reject(new Error(`A exportação foi bloqueada por uma imagem sem permissão CORS. Verifique as fotos e logos usados no pedido. ${error?.message || ''}`.trim()));
         }
       });
     },

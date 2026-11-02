@@ -285,7 +285,12 @@ export default function OrderRevisionPage({ user, isAdmin = false, logout }) {
     try {
       const finalImages = {};
       for (const targetView of availableViews(garment)) {
-        const blob = await stageRef.current?.exportView(targetView);
+        let blob;
+        try {
+          blob = await stageRef.current?.exportView(targetView);
+        } catch (imageError) {
+          throw new Error(`Erro ao exportar ${VIEW_LABELS[targetView] || targetView} da peça "${garment.name}": ${imageError.message}`);
+        }
         if (blob) finalImages[targetView] = await uploadFinalRender(blob, user.uid, `${targetView}-${garment.id || order.garmentId}-v${(order.designVersion || 1) + 1}`);
       }
       const effectiveColors = Object.fromEntries((garment.regions ?? []).map((region) => [region.id, colorChoices[region.id] ?? region.defaultColor]));
