@@ -510,12 +510,33 @@ export async function saveProductionChecklist(orderId, checklist) {
 }
 
 export async function saveOrderQuote(orderId, quote) {
+  if (!orderId) throw new Error('Pedido não identificado.');
+  const quoteItems = Array.isArray(quote?.items) ? quote.items : [];
+  const normalizedItems = quoteItems.map((item) => ({
+    id: String(item.id || '').slice(0, 120),
+    garmentId: String(item.garmentId || '').slice(0, 120),
+    garmentName: String(item.garmentName || '').slice(0, 180),
+    quantity: Math.max(0, Math.floor(Number(item.quantity) || 0)),
+    unitPrice: Number(item.unitPrice) || 0,
+    total: Number(item.total) || 0,
+    description: String(item.description || '').trim().slice(0, 800),
+  }));
+  if (normalizedItems.length) {
+    if (normalizedItems.length > 20 || normalizedItems.some(
+      (item) => !item.garmentId || item.quantity < 1 || !Number.isFinite(item.unitPrice) || item.unitPrice <= 0,
+    )) {
+      throw new Error('Verifique a quantidade e o preço de cada modelo do orçamento.');
+    }
+  }
   await updateDoc(doc(db, 'orders', orderId), {
     quote: {
-      unitPrice: Number(quote.unitPrice) || 0,
-      estimatedTime: quote.estimatedTime || '',
-      notes: quote.notes || '',
-      total: Number(quote.total) || 0,
+      unitPrice: normalizedItems.length ? 0 : (Number(quote.unitPrice) || 0),
+      ...(normalizedItems.length ? { items: normalizedItems } : {}),
+      estimatedTime: String(quote.estimatedTime || '').trim().slice(0, 150),
+      notes: String(quote.notes || '').trim().slice(0, 1200),
+      total: normalizedItems.length
+        ? Math.round(normalizedItems.reduce((sum, item) => sum + item.total, 0) * 100) / 100
+        : (Number(quote.total) || 0),
       generatedAt: new Date().toISOString(),
     },
     updatedAt: serverTimestamp(),

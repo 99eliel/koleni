@@ -1,2 +1,35 @@
+/* Orçamentos da Koleni com diversas peças: visualização e edição independentes. */
 .multi-quote{display:grid;gap:12px;min-width:0;width:100%}
-.multi-quote-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(160px,190px) auto;gap:13px;align-items:end;margin:12px 0;padding:10px;border:1px solid #ddd;border-radius:12px;background:#fff}.multi-quote-row>div{min-width:0;display:flex;flex-direction:column;gap:4px}.multi-quote-row>div strong{overflow-wrap:anywhere;font-size:.83rem}.multi-quote-row small{color:#666}.multi-quote-row>strong{font-size:.88rem;color:#222;padding-bottom:12px}.multi-quote-row label{display:flex;flex-direction:column;gap:6px;font-size:.77rem;font-weight:700}.multi-quote-row input{width:100%;padding:10px;border-radius:8px;border:1px solid #ccc}.multi-quote>.order-quote-form,.multi-quote .order-quote-form{display:flex;flex-direction:column;gap:12px;margin-top:12px}.multi-quote .order-quote-form>label{display:flex;flex-direction:column;gap:7px}.multi-quote .order-quote-form>label input,.multi-quote .order-quote-form textarea{padding:10px;border:1px solid #ccc;border-radius:8px}@media(max-width:650px){.multi-quote-row{grid-template-columns:1fr}.multi-quote-row>strong{padding-bottom:0}}
+.multi-quote-form{min-width:0;gap:14px!important}
+.multi-quote-heading{display:flex;flex-direction:column;gap:5px;padding:12px;background:#f7f7f7;border:1px solid #dedede;border-radius:11px}
+.multi-quote-heading>strong{font-size:.94rem;color:#242424}
+.multi-quote-heading>span{font-size:.77rem;color:#c92a2d;font-weight:800}
+.multi-quote-heading>small{font-size:.73rem;color:#666;line-height:1.5}
+.multi-quote-item{min-width:0;background:#fff;border:1px solid #d8d8d8;border-radius:13px;overflow:hidden}
+.multi-quote-item-head{display:flex;align-items:center;gap:10px;padding:10px 13px;background:#262626;color:#fff}
+.multi-quote-item-head>b{flex:0 0 30px;width:30px;height:30px;border-radius:8px;background:#e33336;display:grid;place-items:center;font-size:1rem}
+.multi-quote-item-head>div{display:flex;flex-direction:column;min-width:0;gap:2px}
+.multi-quote-item-head strong{font-size:.85rem;color:#fff;overflow-wrap:anywhere}
+.multi-quote-item-head span{font-size:.71rem;color:#e5e5e5}
+.multi-quote-art-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,120px),1fr));gap:9px;padding:12px;background:#fafafa}
+.multi-quote-art-grid figure{margin:0;background:#fff;border-radius:9px;border:1px solid #e4e4e4;overflow:hidden;min-width:0;text-align:center}
+.multi-quote-art-grid img{height:155px;max-height:155px;display:block;width:100%;object-fit:contain;padding:4px;background:#f6f6f6}
+.multi-quote-art-grid figcaption{padding:6px 4px;font-size:.69rem;font-weight:700;color:#555}
+.multi-quote-no-image{padding:14px;color:#777;font-size:.76rem;margin:0}
+.multi-quote-sizes{display:flex;gap:8px;flex-wrap:wrap;padding:9px 12px;background:#fafafa;border-top:1px solid #ededed;font-size:.76rem}
+.multi-quote-sizes strong{color:#333}.multi-quote-sizes span{color:#606060}
+.multi-quote-description{display:flex!important;flex-direction:column!important;gap:6px!important;margin:11px 12px!important;color:#515151;font-size:.77rem}
+.multi-quote-description textarea{width:100%!important;max-width:100%;min-height:66px;box-sizing:border-box;resize:vertical}
+.multi-quote-prices{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(54px,.55fr) minmax(98px,1fr);gap:9px;align-items:end;margin:0 12px 12px}
+.multi-quote-prices label{display:flex!important;flex-direction:column!important;gap:6px!important;min-width:0}
+.multi-quote-prices label input{min-width:0;width:100%;box-sizing:border-box}
+.multi-quote-prices>div{min-width:0;display:flex;flex-direction:column;gap:4px;align-items:flex-start;padding:8px 8px;min-height:49px;border:1px solid #e5e5e5;border-radius:9px;background:#f9f9f9}
+.multi-quote-prices span{font-size:.68rem;color:#616161;white-space:nowrap}
+.multi-quote-prices strong{font-size:.83rem;color:#242424;overflow-wrap:anywhere}
+.multi-quote-prices .multi-quote-item-total{background:#fff0f0;border-color:#f5cecf}
+.multi-quote-prices .multi-quote-item-total strong{color:#c92a2d}
+.multi-quote-grand-total{background:#fff0f0!important;border-color:#f2bfc0!important;align-items:center;flex-wrap:wrap}
+.multi-quote-grand-total strong{color:#c92a2d!important;font-size:1.28rem!important}
+.multi-quote-submit{width:100%;white-space:normal;text-align:center;min-width:0}
+@media(max-width:850px){.multi-quote-art-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.multi-quote-art-grid img{height:135px}}
+@media(max-width:520px){.multi-quote-prices{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.multi-quote-prices label{grid-column:1/-1}.multi-quote-art-grid img{height:115px}}

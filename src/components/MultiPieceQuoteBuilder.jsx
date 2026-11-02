@@ -1,82 +1,209 @@
 import { useState } from 'react';
 import { MARTINPEL_LOGO_DATA_URL } from '../lib/martinpelLogo';
 import { saveOrderQuote } from '../lib/orderRepo';
+import { buildMultiPieceQuoteHtml } from '../lib/multiQuoteHtml';
 import OrderOperationsPanel from './OrderOperationsPanel';
 
-const money = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(v) || 0);
-const esc = (v) => String(v ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');
+const money = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value) || 0);
+const VIEW_LABELS = { front: 'Frente / Foto 1', back: 'Costas / Foto 2', combined: 'Foto 3' };
+
+function priceNumber(value) {
+  return Number(String(value || '').replace(',', '.'));
+}
+
+function imagesFor(item) {
+  const images = Object.entries(item.finalImages || {})
+    .filter(([, url]) => Boolean(url))
+    .sort(([a], [b]) => ['front', 'back', 'combined'].indexOf(a) - ['front', 'back', 'combined'].indexOf(b));
+  if (!images.length && item.finalImageUrl) images.push(['final', item.finalImageUrl]);
+  return images.slice(0, 3);
+}
 
 export default function MultiPieceQuoteBuilder({ order, disabled, onSaved }) {
-  const items = order.items || [];
+  const items = Array.isArray(order.items) ? order.items : [];
   const [open, setOpen] = useState(Boolean(order.quote));
-  const [prices, setPrices] = useState(() => items.map((item, index) => String(order.quote?.items?.[index]?.unitPrice ?? '')));
+  const [prices, setPrices] = useState(() => items.map((item, index) => {
+    const previous = (order.quote?.items || []).find((saved) => saved.id && saved.id === item.id)
+      || order.quote?.items?.[index];
+    return previous?.unitPrice ? String(previous.unitPrice) : '';
+  }));
+  const [descriptions, setDescriptions] = useState(() => items.map((item, index) => {
+    const previous = (order.quote?.items || []).find((saved) => saved.id && saved.id === item.id)
+      || order.quote?.items?.[index];
+    return previous?.description || '';
+  }));
   const [estimatedTime, setEstimatedTime] = useState(order.quote?.estimatedTime || '');
   const [notes, setNotes] = useState(order.quote?.notes || '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const lines = items.map((item, index) => ({
-    ...item,
-    unitPrice: Number(String(prices[index] || '').replace(',', '.')) || 0,
-    quantity: Number(item.quantity) || 0,
-  })).map((item) => ({ ...item, total: Math.round(item.unitPrice * item.quantity * 100) / 100 }));
-  const total = Math.round(lines.reduce((sum, item) => sum + item.total, 0) * 100) / 100;
+
+  const lines = items.map((item, index) => {
+    const unitPrice = priceNumber(prices[index]);
+    const quantity = Number(item.quantity) || 0;
+    return {
+      ...item,
+      unitPrice,
+      quantity,
+      description: descriptions[index] || '',
+      total: Number.isFinite(unitPrice) ? Math.round(quantity * unitPrice * 100) / 100 : 0,
+    };
+  });
+  const total = Math.round(lines.reduce((sum, item) => sum + (Number.isFinite(item.total) ? item.total : 0), 0) * 100) / 100;
+  const totalQuantity = lines.reduce((sum, item) => sum + item.quantity, 0);
+
+  function changePrice(index, value) {
+    setPrices((current) => current.map((price, i) => i === index ? value : price));
+    setError('');
+  }
+
+  function changeDescription(index, value) {
+    setDescriptions((current) => current.map((description, i) => i === index ? value : description));
+  }
 
   async function generateQuote() {
-    if (lines.some((item) => item.unitPrice <= 0)) return setError('Informe o valor unitário de cada modelo.');
-    if (!estimatedTime.trim()) return setError('Informe o prazo estimado.');
+    if (busy || disabled) return;
+    if (!lines.length || lines.some((item) => !Number.isFinite(item.unitPrice) || item.unitPrice <= 0)) {
+      setError('Informe o preço unitário de cada modelo (valor maior que zero).');
+      return;
+    }
+    if (!estimatedTime.trim()) {
+      setError('Informe o prazo estimado para o pedido completo.');
+      return;
+    }
+
+    // A janela é aberta durante o clique, antes de qualquer await, para evitar bloqueio de pop-ups.
     const printWindow = window.open('', '_blank');
-    if (!printWindow) return setError('O navegador bloqueou o PDF. Permita abrir novas janelas.');
+    if (!printWindow) {
+      setError('Permita pop-ups para gerar o orçamento com fotos em uma nova janela.');
+      return;
+    }
+    printWindow.document.open();
+    printWindow.document.write('<!doctype html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Preparando orçamento Koleni</title></head><body style="font:16px Arial;padding:30px;color:#333">Preparando orçamento da Koleni...</body></html>');
+    printWindow.document.close();
+
     setBusy(true);
     setError('');
     try {
       await saveOrderQuote(order.id, {
-        items: lines.map((item) => ({ id: item.id || '', garmentId: item.garmentId, garmentName: item.garmentName, quantity: item.quantity, unitPrice: item.unitPrice, total: item.total })),
+        items: lines.map((item) => ({
+          id: item.id || '',
+          garmentId: item.garmentId,
+          garmentName: item.garmentName,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          total: item.total,
+          description: item.description.trim(),
+        })),
         total,
         estimatedTime: estimatedTime.trim(),
         notes: notes.trim(),
       });
-      const rows = lines.map((item, index) => {
-        const image = item.finalImageUrl || Object.values(item.finalImages || {}).find(Boolean) || '';
-        return `<tr><td><div class="product">${image ? `<img src="${esc(image)}" alt="Arte do modelo">` : ''}<div><strong>${index + 1}. ${esc(item.garmentName)}</strong><small>${esc(Object.entries(item.sizeGrid || {}).filter(([,qty]) => Number(qty) > 0).map(([size,qty]) => `${size}: ${qty}`).join(' · '))}</small></div></div></td><td class="num">${item.quantity}</td><td class="num">${money(item.unitPrice)}</td><td class="num"><b>${money(item.total)}</b></td></tr>`;
-      }).join('');
-      const html = `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Orçamento Koleni — ${esc(order.displayCode || order.id)}</title>
-        <style>@page{size:A4;margin:14mm}*{box-sizing:border-box}body{font:13px Arial,sans-serif;color:#242424;margin:0;background:#fff}.sheet{max-width:900px;margin:auto}.brand{background:#141414;text-align:center;padding:12px;border-radius:9px}.brand img{height:70px;max-width:100%;object-fit:contain;background:#fff;border-radius:5px;padding:6px}.head{display:flex;align-items:center;justify-content:space-between;margin:20px 0 16px}.head h1{font-size:25px;margin:0}.head small{display:block;color:#555}.meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px}.meta div{border:1px solid #ddd;border-radius:7px;padding:10px}.meta small{display:block;color:#555;margin-bottom:5px}table{width:100%;border-collapse:collapse}th{text-align:left;color:#fff;background:#333;padding:12px}td{border-bottom:1px solid #ddd;padding:10px 8px;vertical-align:middle}.num{text-align:right;white-space:nowrap}.product{display:flex;align-items:center;gap:10px}.product img{width:65px;height:70px;object-fit:contain;background:#f3f3f3}.product strong{display:block}.product small{display:block;color:#555;font-size:10px;margin-top:4px}.total{text-align:right;font-size:20px;font-weight:800;padding:15px 2px;color:#c92a2d}.extra{padding:12px;border:1px solid #ddd;border-radius:8px;margin-top:12px}.footer{text-align:center;color:#666;font-size:11px;margin:30px auto 0;border-top:1px solid #ddd;padding-top:12px}.print{position:fixed;bottom:15px;right:20px;padding:10px 16px;background:#e33336;border:0;border-radius:7px;color:#fff}@media print{.print{display:none}.brand,th{print-color-adjust:exact;-webkit-print-color-adjust:exact}}@media(max-width:600px){.meta{grid-template-columns:1fr}.product{flex-direction:column;text-align:left}.product img{width:50px}}</style></head>
-        <body><div class="sheet"><div class="brand"><img src="${esc(MARTINPEL_LOGO_DATA_URL)}" alt="Koleni"></div>
-        <div class="head"><div><h1>Orçamento</h1><small>Personalizações de uniformes</small></div><div><strong>Pedido ${esc(order.displayCode || order.id)}</strong><small>${new Date().toLocaleDateString('pt-BR')}</small></div></div>
-        <div class="meta"><div><small>Cliente</small><strong>${esc(order.customerName || 'Não informado')}</strong></div><div><small>WhatsApp</small><strong>${esc(order.whatsapp || 'Não informado')}</strong></div></div>
-        <table><thead><tr><th>Modelo / Arte</th><th class="num">Qtd.</th><th class="num">Unitário</th><th class="num">Subtotal</th></tr></thead><tbody>${rows}</tbody></table>
-        <div class="total">Total do pedido: ${money(total)}</div>
-        <div class="extra"><strong>Prazo:</strong> ${esc(estimatedTime.trim())}</div>
-        ${notes.trim() ? `<div class="extra"><strong>Observações:</strong> ${esc(notes.trim())}</div>` : ''}
-        <div class="footer">Koleni Uniformes — orçamento completo com ${lines.length} modelos e ${lines.reduce((sum,item) => sum + item.quantity,0)} peças.</div>
-        </div><button class="print" onclick="window.print()">Imprimir / Salvar PDF</button></body></html>`;
+      const html = buildMultiPieceQuoteHtml({
+        order,
+        lines,
+        total,
+        estimatedTime: estimatedTime.trim(),
+        notes: notes.trim(),
+        logoUrl: MARTINPEL_LOGO_DATA_URL,
+      });
       printWindow.document.open();
       printWindow.document.write(html);
       printWindow.document.close();
-      await onSaved?.();
+      try {
+        await onSaved?.();
+      } catch (refreshError) {
+        console.warn('Orçamento salvo, mas não foi possível atualizar a lista agora:', refreshError);
+      }
     } catch (err) {
       printWindow.close();
-      setError(err.message || 'Não foi possível criar o orçamento.');
+      setError(err.message || 'Não foi possível salvar o orçamento. Confira sua conexão e tente novamente.');
     } finally {
       setBusy(false);
     }
   }
 
-  return <div className="multi-quote">
-    <button className="button button-secondary order-quote-toggle" type="button" disabled={disabled || busy} onClick={() => setOpen((v) => !v)}>{open ? 'Fechar orçamento' : 'Orçamento por modelo'}</button>
-    {open && <div className="order-quote-form">
-      <strong>Preços por modelo</strong>
-      {lines.map((item, index) => <div className="multi-quote-row" key={item.id || index}>
-        <div><strong>{index + 1}. {item.garmentName}</strong><small>{item.quantity} unidade(s)</small></div>
-        <label>Preço unitário (R$)<input type="number" min="0.01" step="0.01" required value={prices[index] || ''} onChange={(e) => setPrices((p) => p.map((v, i) => i === index ? e.target.value : v))} placeholder="Ex.: 89,90" /></label>
-        <strong>{money(item.total)}</strong>
-      </div>)}
-      <label>Prazo estimado<input value={estimatedTime} onChange={(e) => setEstimatedTime(e.target.value)} placeholder="Ex.: 15 dias úteis" /></label>
-      <label>Observações<textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} /></label>
-      <div className="order-quote-total"><span>Valor total do pedido</span><strong>{money(total)}</strong></div>
-      {error && <div className="order-quote-error">{error}</div>}
-      <button className="button button-primary" type="button" disabled={busy || disabled} onClick={generateQuote}>{busy ? 'Gerando…' : 'Gerar orçamento completo / PDF'}</button>
-    </div>}
-    <OrderOperationsPanel order={order} disabled={disabled || busy} onSaved={onSaved} />
-  </div>;
+  return (
+    <div className="multi-quote">
+      <button
+        className="button button-secondary order-quote-toggle"
+        type="button"
+        disabled={disabled || busy}
+        onClick={() => setOpen((value) => !value)}
+      >
+        {open ? 'Fechar orçamento' : order.quote ? 'Editar orçamento com fotos' : 'Criar orçamento com fotos por modelo'}
+      </button>
+      {open && (
+        <div className="order-quote-form multi-quote-form">
+          <div className="multi-quote-heading">
+            <strong>Orçamento detalhado por modelo</strong>
+            <span>{items.length} personalizações · {totalQuantity} peças</span>
+            <small>Cada modelo terá fotos, grade, personalização e valores próprios no mesmo PDF.</small>
+          </div>
+          {lines.map((item, index) => {
+            const imageList = imagesFor(item);
+            const sizes = Object.entries(item.sizeGrid || {}).filter(([, amount]) => Number(amount) > 0);
+            return (
+              <section className="multi-quote-item" key={item.id || index}>
+                <header className="multi-quote-item-head">
+                  <b>{index + 1}</b>
+                  <div><strong>{item.garmentName || 'Modelo personalizado'}</strong><span>{item.quantity} unidade(s)</span></div>
+                </header>
+                {imageList.length > 0 ? (
+                  <div className="multi-quote-art-grid">
+                    {imageList.map(([view, url]) => (
+                      <figure key={view}>
+                        <img src={url} alt={VIEW_LABELS[view] || 'Arte final'} loading="lazy" />
+                        <figcaption>{VIEW_LABELS[view] || 'Arte final'}</figcaption>
+                      </figure>
+                    ))}
+                  </div>
+                ) : <p className="multi-quote-no-image">Esta peça ainda não possui foto final.</p>}
+                <div className="multi-quote-sizes">
+                  <strong>Grade:</strong>
+                  <span>{sizes.length ? sizes.map(([size, amount]) => size + ': ' + amount).join(' · ') : 'Não informada'}</span>
+                </div>
+                <label className="multi-quote-description">
+                  Especificação / acabamento deste modelo (opcional)
+                  <textarea
+                    rows={2}
+                    maxLength={800}
+                    value={descriptions[index] || ''}
+                    placeholder="Ex.: logo bordada no peito esquerdo e nome estampado nas costas"
+                    disabled={disabled || busy}
+                    onChange={(event) => changeDescription(index, event.target.value)}
+                  />
+                </label>
+                <div className="multi-quote-prices">
+                  <label>
+                    Preço por peça (R$)
+                    <input
+                      type="number" min="0.01" step="0.01" inputMode="decimal" required
+                      value={prices[index] || ''}
+                      onChange={(event) => changePrice(index, event.target.value)}
+                      disabled={disabled || busy}
+                      placeholder="Ex.: 89,90"
+                    />
+                  </label>
+                  <div><span>Quantidade</span><strong>{item.quantity}</strong></div>
+                  <div className="multi-quote-item-total"><span>Subtotal</span><strong>{money(item.total)}</strong></div>
+                </div>
+              </section>
+            );
+          })}
+          <label>Prazo estimado do pedido completo
+            <input value={estimatedTime} onChange={(event) => setEstimatedTime(event.target.value)} maxLength={150} disabled={disabled || busy} placeholder="Ex.: 15 dias úteis" />
+          </label>
+          <label>Observações gerais / condições (opcional)
+            <textarea rows={2} maxLength={1200} value={notes} onChange={(event) => setNotes(event.target.value)} disabled={disabled || busy} placeholder="Ex.: pagamento, frete, validade da proposta" />
+          </label>
+          <div className="order-quote-total multi-quote-grand-total"><span>Valor total · {totalQuantity} peças</span><strong>{money(total)}</strong></div>
+          {error && <div className="order-quote-error">{error}</div>}
+          <button className="button button-primary multi-quote-submit" type="button" disabled={busy || disabled} onClick={generateQuote}>
+            {busy ? 'Salvando e preparando o PDF…' : 'Gerar orçamento completo com fotos / PDF'}
+          </button>
+        </div>
+      )}
+      <OrderOperationsPanel order={order} disabled={disabled || busy} onSaved={onSaved} />
+    </div>
+  );
 }
