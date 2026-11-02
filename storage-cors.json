@@ -6,7 +6,8 @@
       "https://personalizakoleni.firebaseapp.com",
       "https://www.koleni.com.br",
       "https://koleni.com.br",
-      "http://localhost:5173"
+      "http://localhost:5173",
+      "https://sistema.koleni.com.br"
     ],
     "method": [
       "GET",
