@@ -154,7 +154,7 @@ function PricingAdminContent({ user, logout }) {
       const parsed = JSON.parse(await file.text());
       if (!Array.isArray(parsed.produtos) || !Array.isArray(parsed.p) || !parsed.qs) throw new Error('Arquivo não é uma tabela de preços Koleni.');
       if (!window.confirm(`Importar ${parsed.produtos.length} modelos? Peças com o mesmo nome terão os preços substituídos pelos do arquivo. Outras peças serão preservadas. Recomenda-se fazer um backup antes.`)) return;
-      await importLegacyCatalog(parsed, data?.legacy ? [] : data?.products || [], user.uid);
+      await importLegacyCatalog(parsed, data?.legacy ? [] : data?.products || [], user.uid, data?.legacy ? null : data?.config);
       await load(); setSuccess(`${parsed.produtos.length} modelos importados. Confira o catálogo e seus preços.`);
     } catch (err) { setError(`Falha na importação: ${err.message}`); }
     finally { setBusy(false); }

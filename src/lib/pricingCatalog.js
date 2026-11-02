@@ -8,6 +8,16 @@ export const DEFAULT_CONFIG = {
   qs: DEFAULT_TIERS, avista: 0.05, t3: 0.10, parc: 3,
   deliveryDays: 30, validDays: 15, artSizeCm: '10 × 10 cm', gerado: '', catalogVersion: 2,
 };
+// Todas as 172 combinações usadas pelo motor original de preços.
+export const REQUIRED_PRICE_CODES = [
+  'N',
+  ...[1, 2, 3].flatMap((pos) => ['P', 'M', 'G'].flatMap((size) => [
+    `D${pos}${size}`,
+    ...[0, 1].map((matrix) => `B${pos}${size}${matrix}`),
+    ...[1, 2, 3, 4].flatMap((colors) => [0, 1].flatMap((complex) => [0, 1].map((screen) => `S${pos}${size}${colors}${complex}${screen}`))),
+  ])),
+];
+
 const text = (value, limit = 300) => String(value ?? '').trim().slice(0, limit);
 const asPercent = (value, fallback) => Number.isFinite(Number(value)) ? Number(value) : fallback;
 const keyFromName = (name) => text(name, 180).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR');
@@ -74,7 +84,7 @@ export async function loadPricingCatalog() {
 // Somente campos necessários para cálculo e exposição das descrições à equipe autenticada.
 // Os índices dos nomes e matrizes são mantidos sincronizados com o motor de preços original.
 export function toCalculatorPricing(config, products) {
-  const published = products.filter((p) => p.active && p.name && p.prices && Object.keys(p.prices).length > 0);
+  const published = products.filter((p) => p.active && p.name && REQUIRED_PRICE_CODES.every((code) => p.prices?.[code]?.length === config.qs.length && p.prices[code].every((cents) => Number.isInteger(cents) && cents > 0)));
   return {
     ...cleanConfig(config),
     produtos: published.map((p) => p.name),
@@ -87,11 +97,11 @@ export function toCalculatorPricing(config, products) {
   };
 }
 
-export function validateProduct(product, tiers, expectedCodes = []) {
+export function validateProduct(product, tiers, expectedCodes = REQUIRED_PRICE_CODES) {
   const p = normalizeProduct(product);
   if (!p.name) throw new Error('Preencha o nome do modelo.');
   if (!Object.keys(p.prices).length) throw new Error('Cadastre a matriz de preços antes de publicar.');
-  const codes = expectedCodes.length ? expectedCodes : Object.keys(p.prices);
+  const codes = expectedCodes.length ? expectedCodes : REQUIRED_PRICE_CODES;
   if (codes.some((code) => !Array.isArray(p.prices[code]) || p.prices[code].length !== tiers.length || p.prices[code].some((price) => !Number.isInteger(price) || price <= 0))) {
     throw new Error('Há preços zerados ou inválidos. Complete as quantidades para todas as técnicas antes de ativar a peça.');
   }
@@ -160,17 +170,21 @@ export async function saveGlobalPricing(config, products, oldTiers, userUid) {
   return nextConfig;
 }
 
-export async function importLegacyCatalog(parsed, currentProducts, userUid) {
+export async function importLegacyCatalog(parsed, currentProducts, userUid, oldConfig = null) {
   if (!Array.isArray(parsed.produtos) || !Array.isArray(parsed.p) || parsed.produtos.length !== parsed.p.length || !Array.isArray(parsed.qs) || !parsed.qs.length) throw new Error('Arquivo sem estrutura válida de tabela Koleni.');
   if (parsed.produtos.length > 400) throw new Error('Importação acima do limite de 400 modelos por operação.');
   const config = cleanConfig({ ...parsed, catalogVersion: 2 });
   if (config.qs.length !== parsed.qs.length) throw new Error('Faixas de quantidade inválidas.');
+  const importedNames = new Set(parsed.produtos.map(keyFromName));
+  if (oldConfig && currentProducts.some((p) => !importedNames.has(keyFromName(p.name))) && JSON.stringify(oldConfig.qs) !== JSON.stringify(config.qs)) {
+    throw new Error('Esta tabela usa faixas de quantidade diferentes e existem peças fora do arquivo. Ajuste as faixas gerais primeiro para evitar preços inconsistentes.');
+  }
   const batch = writeBatch(db);
   const previousByName = new Map(currentProducts.map((p) => [keyFromName(p.name), p]));
   const newProducts = parsed.produtos.map((name, index) => {
     const old = previousByName.get(keyFromName(name)) || parsed.products?.find((item) => keyFromName(item.name) === keyFromName(name)) || parsed.productMeta?.[index];
     const p = normalizeProduct({ ...old, name, prices: parsed.p[index], sortOrder: index, active: old?.active ?? true }, old?.id || crypto.randomUUID());
-    if (!p.name || !p.prices.N || Object.values(p.prices).some((arr) => arr.length !== config.qs.length || arr.some((n) => !Number.isInteger(n) || n < 1))) throw new Error(`Preços inválidos para ${name}.`);
+    if (!p.name || REQUIRED_PRICE_CODES.some((code) => !Array.isArray(p.prices[code]) || p.prices[code].length !== config.qs.length || p.prices[code].some((n) => !Number.isInteger(n) || n < 1))) throw new Error(`Preços incompletos para ${name}. O arquivo precisa ter todas as 172 combinações originais.`);
     batch.set(doc(db, PRICING_PRODUCTS, p.id), { ...p, updatedAt: serverTimestamp(), updatedBy: userUid }, { merge: true });
     return p;
   });
