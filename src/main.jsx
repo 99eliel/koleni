@@ -7,6 +7,7 @@ import './styles.css';
 import './martinpel-theme.css';
 import './production-features.css';
 import './pwa.css';
+import './koleni-theme.css';
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

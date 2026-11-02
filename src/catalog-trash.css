@@ -8,19 +8,19 @@
   justify-content:center;
   min-height:44px;
   padding:0 18px;
-  border:1px solid #c9d8e6;
+  border:1px solid #e7e7e7;
   border-radius:999px;
   background:#fff;
-  color:#062b52;
+  color:#262626;
   font-weight:900;
   text-decoration:none;
-  box-shadow:0 14px 34px rgba(6,43,82,.18);
+  box-shadow:0 14px 34px rgba(38,38,38,.18);
   transition:.18s ease;
 }
 
 .admin-archive-shortcut:hover{
   transform:translateY(-2px);
-  background:#062b52;
+  background:#262626;
   color:#fff;
 }
 
@@ -28,7 +28,7 @@
   min-height:100vh;
   padding:24px;
   background:linear-gradient(180deg,#eaf2f8 0,#f6f9fc 40%,#eef4f8 100%);
-  color:#10223a;
+  color:#262626;
 }
 
 .trash-topbar{
@@ -36,8 +36,8 @@
   margin:0 auto 18px;
   padding:18px 22px;
   border-radius:22px;
-  background:linear-gradient(135deg,#062b52,#0b4476);
-  box-shadow:0 18px 45px rgba(6,43,82,.2);
+  background:linear-gradient(135deg,#262626,#e33336);
+  box-shadow:0 18px 45px rgba(38,38,38,.2);
   display:flex;
   align-items:center;
   justify-content:space-between;
@@ -63,12 +63,12 @@
   padding:26px 28px;
   border-radius:22px;
   background:#fff;
-  border:1px solid #d9e4ef;
+  border:1px solid #e7e7e7;
   display:flex;
   align-items:center;
   justify-content:space-between;
   gap:24px;
-  box-shadow:0 14px 35px rgba(16,34,58,.08);
+  box-shadow:0 14px 35px rgba(38,38,38,.08);
 }
 
 .trash-kicker{
@@ -78,7 +78,7 @@
   font-weight:900;
   letter-spacing:.14em;
   text-transform:uppercase;
-  color:#1d6fae;
+  color:#e33336;
 }
 
 .trash-hero h1{
@@ -89,7 +89,7 @@
 .trash-hero p{
   margin:0;
   max-width:800px;
-  color:#64748b;
+  color:#626262;
   line-height:1.6;
 }
 
@@ -104,11 +104,11 @@
 .trash-count strong{
   display:block;
   font-size:2rem;
-  color:#062b52;
+  color:#262626;
 }
 
 .trash-count span{
-  color:#64748b;
+  color:#626262;
   font-size:.78rem;
   font-weight:800;
 }
@@ -136,7 +136,7 @@
   display:grid;
   place-items:center;
   background:linear-gradient(145deg,#e9f0f6,#f9fbfd);
-  border-bottom:1px solid #d9e4ef;
+  border-bottom:1px solid #e7e7e7;
 }
 
 .trash-card-image img{
@@ -148,7 +148,7 @@
 }
 
 .trash-card-image span{
-  color:#64748b;
+  color:#626262;
   font-weight:800;
 }
 
@@ -163,7 +163,7 @@
   padding:5px 9px;
   border-radius:999px;
   background:#eef1f5;
-  color:#536274;
+  color:#626262;
   font-size:.72rem;
   font-weight:900;
   text-transform:uppercase;
@@ -179,13 +179,13 @@
   display:block;
   max-width:100%;
   overflow-wrap:anywhere;
-  color:#64748b;
+  color:#626262;
   font-size:.72rem;
 }
 
 .trash-card p{
   margin:14px 0 18px;
-  color:#64748b;
+  color:#626262;
   font-size:.88rem;
   line-height:1.5;
 }
@@ -222,7 +222,7 @@
 }
 
 .trash-empty span{
-  color:#64748b;
+  color:#626262;
 }
 
 @media (max-width:760px){

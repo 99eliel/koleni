@@ -1,9 +1,9 @@
 const CACHE_PREFIX = 'koleni-vendas';
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const CACHE_NAME = `${CACHE_PREFIX}-${CACHE_VERSION}`;
 const BASE_PATH = new URL(self.registration.scope).pathname;
 const pathFor = (path) => `${BASE_PATH}${path}`;
-const APP_SHELL = [pathFor('manifest.webmanifest'), pathFor('pwa-icon.svg')];
+const APP_SHELL = [pathFor('manifest.webmanifest'), pathFor('pwa-icon.svg'), pathFor('koleni-logo.svg')];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME)
@@ -32,7 +32,8 @@ self.addEventListener('fetch', (event) => {
 
   const shouldCache = url.pathname.startsWith(pathFor('assets/'))
     || url.pathname === pathFor('manifest.webmanifest')
-    || url.pathname === pathFor('pwa-icon.svg');
+    || url.pathname === pathFor('pwa-icon.svg')
+    || url.pathname === pathFor('koleni-logo.svg');
   if (!shouldCache) return;
 
   event.respondWith(fetch(request, { cache: 'no-store' }).then((response) => {

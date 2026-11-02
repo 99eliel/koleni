@@ -1,0 +1,229 @@
+/* Identidade Koleni • vermelho / preto / cinza. Aplicada após os estilos originais.
+   As cores configuráveis dos uniformes e os estados de sucesso/alerta permanecem independentes. */
+:root {
+  --koleni-red: #e33336;
+  --koleni-red-hover: #c92a2d;
+  --koleni-black: #111111;
+  --koleni-charcoal: #282828;
+  --koleni-gray: #646464;
+  --koleni-light: #f3f3f3;
+  --koleni-border: #d9d9d9;
+  --mp-navy: #202020;
+  --mp-navy-2: #363636;
+  --mp-navy-3: #e33336;
+  --mp-blue: #e33336;
+  --mp-blue-soft: #fff0f0;
+  --mp-sky: #f7f7f7;
+  --mp-ink: #242424;
+  --mp-muted: #656565;
+  --mp-border: #dedede;
+  --mp-panel: #ffffff;
+  --mp-shadow: 0 18px 45px rgba(0,0,0,.10);
+  --mp-shadow-soft: 0 8px 24px rgba(0,0,0,.07);
+  accent-color: #e33336;
+}
+body {
+  color: var(--mp-ink);
+  background: linear-gradient(180deg,#f2f2f2 0%,#fafafa 40%,#f5f5f5 100%) !important;
+}
+::selection { background: #ffdddd; color: #242424; }
+a:focus-visible,button:focus-visible,[role="button"]:focus-visible {
+  outline: 3px solid rgba(227,51,54,.5);
+  outline-offset: 2px;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: #e33336 !important;
+  box-shadow: 0 0 0 3px rgba(227,51,54,.14) !important;
+}
+.button-primary,.public-login-button,.public-primary-button {
+  background: linear-gradient(135deg,#e33336,#ca272a) !important;
+  border-color: #c92a2d !important;
+  color: #fff !important;
+  box-shadow: 0 8px 20px rgba(227,51,54,.18);
+}
+.button-primary:not(:disabled):hover,.public-login-button:hover,.public-primary-button:hover {
+  background: linear-gradient(135deg,#c92a2d,#ad2427) !important;
+  border-color: #a92528 !important;
+  color: #fff !important;
+}
+.button-secondary,.button-ghost,.button-light {
+  background: #fff;
+  border-color: #d9d9d9;
+  color: #333;
+}
+.button-secondary:not(:disabled):hover,.button-ghost:not(:disabled):hover {
+  background: #f8f8f8;
+  border-color: #bcbcbc;
+}
+.eyebrow,.public-kicker,.public-section-label { color: #d12b2f !important; }
+.panel,.public-feature-card,.public-dashboard-card,.seller-order-card {
+  border-color: #dedede;
+}
+.martinpel-appbar,.seller-orders-topbar,.pipeline-topbar,.team-topbar {
+  background: linear-gradient(135deg,#0e0e0e 0%,#252525 62%,#383838 100%) !important;
+  border-color: rgba(255,255,255,.12) !important;
+  color: #fff;
+}
+.martinpel-appbar::before,.martinpel-appbar::after {
+  background: linear-gradient(90deg,transparent,rgba(227,51,54,.75),transparent);
+  box-shadow: none;
+}
+.catalog-hero {
+  background: radial-gradient(circle at 87% 18%,rgba(227,51,54,.20),transparent 33%),
+              linear-gradient(120deg,#111 0%,#282828 69%,#3a3a3a 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 20px 40px rgba(0,0,0,.14) !important;
+}
+.catalog-kicker {color:#ffb5b6!important}
+.admin-sidebar-v2 {
+  background: linear-gradient(180deg,#101010 0%,#212121 55%,#151515 100%) !important;
+  box-shadow: 12px 0 30px rgba(0,0,0,.14);
+  color: #dedede !important;
+}
+.admin-sidebar-section-label,.admin-sidebar-context span {color:#e9797b!important}
+.admin-sidebar-nav button {color:#dedede!important}
+.admin-sidebar-nav button:hover {color:#fff!important;background:rgba(255,255,255,.07)!important}
+.admin-sidebar-nav button.active {
+  background:linear-gradient(100deg,rgba(227,51,54,.28),rgba(227,51,54,.07)) !important;
+  border-color:rgba(227,51,54,.38)!important;
+  box-shadow:inset 3px 0 0 #e33336!important;
+  color:#fff!important;
+}
+.admin-nav-icon {color:#ff898b!important}
+.admin-sidebar-nav button.active .admin-nav-icon {
+  background:#e33336!important;color:#fff!important;
+}
+.admin-sidebar-context {background:rgba(0,0,0,.22)!important}
+.admin-sidebar-context button {color:#ff999a!important}
+.admin-sidebar-nav small {color:#aaa!important}
+.admin-sidebar-nav button.active small {color:#eee!important}
+.admin-main-tabs button.active,
+.customer-view-tabs button.active {
+  background:#e33336!important;
+  color:#fff!important;
+  box-shadow:0 6px 18px rgba(227,51,54,.18)!important;
+}
+.admin-main-tabs button.active span {color:#c92a2d!important}
+.seller-orders-shortcut,.admin-team-shortcut {
+  background:#e33336!important;color:#fff!important;border-color:#d12b2e!important;
+}
+.admin-production-shortcut {color:#282828!important;border-color:#d9d9d9!important}
+.approval-screen {
+  background:radial-gradient(circle at 15% 0%,rgba(227,51,54,.12),transparent 36%),
+             linear-gradient(145deg,#111,#292929)!important;
+}
+.approval-brand {background:linear-gradient(125deg,#111,#282828)!important}
+.approval-heading>span {color:#c92a2d!important}
+.login-shell {
+  background:radial-gradient(circle at 50% 0%,rgba(227,51,54,.19),transparent 36%),
+             linear-gradient(160deg,#101010,#282828 72%,#141414)!important;
+}
+.login-card {
+  background:#fff!important;
+  border:1px solid #dedede!important;
+  box-shadow:0 30px 70px rgba(0,0,0,.28)!important;
+}
+.login-brand-block {
+  background:linear-gradient(145deg,#101010,#282828)!important;
+  border:1px solid rgba(255,255,255,.08)!important;
+}
+/* O símbolo e o subtítulo da marca precisam de contraste em fundos escuros. */
+.martinpel-brand-emblem {
+  clip-path:none!important;
+  border-radius:14px!important;
+  background:#fff!important;
+  filter:none!important;
+  border:1px solid rgba(255,255,255,.25)!important;
+  box-shadow:0 6px 20px rgba(0,0,0,.10);
+}
+.martinpel-brand-emblem::before,.martinpel-brand-tech-line,.martinpel-brand-stripes {
+  display:none!important;
+}
+.martinpel-brand-logo {
+  background:#fff!important;
+  border-radius:10px!important;
+  box-shadow:none!important;
+}
+.martinpel-brand-logo img {object-fit:contain!important}
+.martinpel-brand-copy {padding-right:0!important}
+.martinpel-brand-company {
+  color:#ed5356!important;
+  letter-spacing:.10em!important;
+}
+.martinpel-brand-copy strong {
+  background:none!important;
+  -webkit-text-fill-color:currentColor!important;
+  color:#fff!important;
+  text-shadow:none!important;
+}
+.martinpel-brand-subtitle {color:#c0c0c0!important}
+.martinpel-appbar-meta small {color:#c7c7c7!important}
+.admin-sidebar-brand .martinpel-system-brand {
+  display:flex!important;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:9px;
+  width:100%;
+  min-width:0;
+}
+.admin-sidebar-brand .martinpel-brand-emblem {width:170px!important;height:74px!important}
+.admin-sidebar-brand .martinpel-brand-logo {width:153px!important;height:58px!important;min-height:58px!important}
+.admin-sidebar-brand .martinpel-brand-copy {
+  padding:0 4px!important;
+  width:100%;
+}
+.admin-sidebar-brand .martinpel-brand-copy strong {
+  font-size:clamp(1rem,1.4vw,1.24rem)!important;
+  white-space:normal!important;
+}
+.login-card .martinpel-brand-emblem {width:220px!important;height:98px!important}
+.login-card .martinpel-brand-logo {width:204px!important;height:82px!important;min-height:82px!important}
+.login-card .martinpel-brand-logo img {height:76px!important}
+.login-card .martinpel-brand-copy strong {color:#fff!important}
+.login-card .martinpel-brand-company {color:#ff7476!important}
+.public-nav {border-bottom:1px solid #dedede!important;background:rgba(255,255,255,.96)!important}
+.public-nav .martinpel-brand-company {color:#e33336!important}
+.public-nav .martinpel-brand-copy strong {color:#262626!important}
+.public-nav .martinpel-brand-subtitle {color:#626262!important}
+.public-nav .martinpel-brand-emblem {border-color:#eee!important}
+.martinpel-public {background:#f7f7f7!important;color:#262626!important}
+.public-hero-copy h1,.public-intro h2,.public-section-heading h2,.public-seo-copy h2 {color:#242424!important}
+.public-hero-copy>p,.public-section-heading>p,.public-feature-card p {color:#626262!important}
+.public-search-tags span {border-color:#dedede!important;color:#525252!important}
+.public-dashboard-card,.public-feature-card {box-shadow:0 9px 28px rgba(0,0,0,.055)!important}
+.public-feature-icon {background:#fff0f0!important;color:#e33336!important}
+.public-dashboard-grid span,.public-flow-grid span {color:#e33336!important}
+.public-progress span {background:#e33336!important}
+.public-cta {
+  background:linear-gradient(110deg,#161616,#333)!important;
+  border-color:#252525!important;
+  color:#fff!important;
+}
+.public-cta h2,.public-cta p,.public-cta span {color:#fff!important}
+.pwa-install-icon {background:linear-gradient(140deg,#111,#e33336)!important}
+@media (max-width: 760px) {
+  .martinpel-brand-copy {padding-right:0!important}
+  .admin-sidebar-brand .martinpel-brand-emblem {width:148px!important;height:65px!important}
+  .admin-sidebar-brand .martinpel-brand-logo {width:133px!important;height:50px!important;min-height:50px!important}
+  .login-card .martinpel-brand-emblem {width:190px!important;height:86px!important}
+  .login-card .martinpel-brand-logo {width:176px!important;height:70px!important;min-height:70px!important}
+  .login-card .martinpel-brand-logo img {height:65px!important}
+}
+
+/* Ajustes finais: áreas operacionais e versão clara do wordmark. */
+.admin-shell-v2 {
+  background:#f3f3f3!important;
+}
+.seller-orders-shell,.pipeline-shell,.team-shell {
+  background:linear-gradient(180deg,#efefef,#fafafa 48%,#f3f3f3)!important;
+  color:#242424!important;
+}
+.catalog-card:hover {
+  border-color:rgba(227,51,54,.40)!important;
+  box-shadow:0 16px 40px rgba(0,0,0,.11)!important;
+}
+.public-footer .martinpel-brand-copy strong {color:#282828!important}
+.public-footer .martinpel-brand-company {color:#e33336!important}
+.public-footer .martinpel-brand-subtitle {color:#626262!important}
+.public-footer-links a {color:#c92a2d!important}
+::placeholder {color:#888;opacity:1}

@@ -1,6 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Koleni Personalização">
-  <rect width="512" height="512" rx="110" fill="#062b52"/>
-  <rect x="54" y="54" width="404" height="404" rx="96" fill="#0b5d92"/>
-  <path d="M148 133h64v109l102-109h81L275 262l125 117h-89l-99-95v95h-64z" fill="#fff"/>
-  <rect x="150" y="406" width="212" height="13" rx="6" fill="#f6c945"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Koleni"><rect width="512" height="512" rx="110" fill="#111111"/><rect x="42" y="42" width="428" height="428" rx="94" fill="#242424"/><path fill="#e33336" d="M115 107h79v145l133-145h95L276 265l150 140H321L194 287v118h-79z"/><circle cx="405" cy="112" r="27" fill="#6b6b6b"/></svg>
