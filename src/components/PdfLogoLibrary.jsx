@@ -1,7 +1,7 @@
 const VIEW_LABELS = {
-  front: 'Frente',
-  back: 'Costas',
-  combined: 'Frente + Costas',
+  front: 'Foto 1',
+  back: 'Foto 2',
+  combined: 'Foto 3',
 };
 
 export default function PdfLogoLibrary({
@@ -44,17 +44,17 @@ export default function PdfLogoLibrary({
               onClick={() => onAddPage(page.pageNumber)}
               disabled={busyPage !== null}
             >
-              {busyPage === page.pageNumber ? 'Adicionando…' : '+ Nesta vista'}
+              {busyPage === page.pageNumber ? 'Adicionando…' : '+ Nesta foto'}
             </button>
           </article>
         ))}
       </div>
 
       <div className="pdf-logo-library-footer">
-        <span>Você pode usar a mesma página quantas vezes quiser e em qualquer vista.</span>
+        <span>Você pode usar a mesma página quantas vezes quiser e em qualquer foto.</span>
         {pages.length > 1 && (
           <button type="button" className="mini-link" onClick={onAddAll} disabled={busyPage !== null}>
-            Adicionar todas nesta vista
+            Adicionar todas nesta foto
           </button>
         )}
       </div>

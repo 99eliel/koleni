@@ -1,1 +1,8 @@
-export const MARTINPEL_LOGO_DATA_URL = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1MjAiIGhlaWdodD0iMTUwIiB2aWV3Qm94PSIwIDAgNTIwIDE1MCI+CjxyZWN0IHdpZHRoPSI1MjAiIGhlaWdodD0iMTUwIiByeD0iMjIiIGZpbGw9IiMwNTA1MDUiLz4KPHRleHQgeD0iMzAiIHk9Ijg4IiBmb250LWZhbWlseT0iQXJpYWwsIEhlbHZldGljYSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI3MiIgZm9udC13ZWlnaHQ9IjgwMCIgZmlsbD0iI2VkMWMyNCI+S29sZW5pPC90ZXh0Pgo8dGV4dCB4PSIzNiIgeT0iMTIyIiBmb250LWZhbWlseT0iQXJpYWwsIEhlbHZldGljYSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNiIgZmlsbD0iI2ZmZmZmZiIgbGV0dGVyLXNwYWNpbmc9IjIiPlVOSUZPUk1FUzwvdGV4dD4KPGNpcmNsZSBjeD0iNDc0IiBjeT0iMzQiIHI9IjEwIiBmaWxsPSIjZmZmZmZmIi8+Cjwvc3ZnPg==';
+const koleniLogoSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 160" aria-label="Koleni">
+  <rect width="420" height="160" rx="24" fill="#062b52"/>
+  <rect x="17" y="17" width="126" height="126" rx="25" fill="#0b5d92"/>
+  <path d="M52 45h18v34l31-34h23L88 85l39 38h-25L70 91v32H52z" fill="#fff"/>
+  <text x="160" y="101" font-size="61" font-family="Arial,sans-serif" font-weight="800" fill="#fff">KOLENI</text>
+  <rect x="163" y="115" width="211" height="6" rx="3" fill="#f6c945"/>
+</svg>`;
+export const MARTINPEL_LOGO_DATA_URL = 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(koleniLogoSvg);

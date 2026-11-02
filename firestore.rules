@@ -14,52 +14,11 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/staff/$(request.auth.uid)).data;
     }
 
-    function hasLegacyAdminProfile() {
-      return isSignedIn()
-        && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
-    }
-
-    function legacyAdminData() {
-      return get(/databases/$(database)/documents/admins/$(request.auth.uid)).data;
-    }
-
-    function hasLegacyUserProfile() {
-      return isSignedIn()
-        && exists(/databases/$(database)/documents/usuarios/$(request.auth.uid));
-    }
-
-    function legacyUserData() {
-      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data;
-    }
-
-    function legacyAdminIsValid() {
-      return hasLegacyAdminProfile()
-        && (
-          legacyAdminData().tipo == 'admin'
-          || legacyAdminData().role == 'admin'
-        )
-        && (
-          legacyAdminData().ativo == true
-          || legacyAdminData().active == true
-        );
-    }
-
-    function legacyUserIsAdmin() {
-      return hasLegacyUserProfile()
-        && (
-          legacyUserData().tipo == 'admin'
-          || legacyUserData().role == 'admin'
-        )
-        && (
-          legacyUserData().ativo == true
-          || legacyUserData().active == true
-        );
-    }
-
     function isLegacyAdmin() {
       return isSignedIn()
         && !hasStaffProfile()
-        && (legacyAdminIsValid() || legacyUserIsAdmin());
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'admin';
     }
 
     function isActiveStaff() {
@@ -120,8 +79,7 @@ service cloud.firestore {
     }
 
     function isPublicApprovalUpdate() {
-      return request.auth == null
-        && resource.data.approvalStatus == 'pending'
+      return resource.data.approvalStatus == 'pending'
         && resource.data.approvalToken is string
         && request.resource.data.approvalProof == resource.data.approvalToken
         && request.resource.data.approvalStatus in ['approved', 'changes_requested']
@@ -137,8 +95,7 @@ service cloud.firestore {
     }
 
     function isPublicSellerSummaryApprovalUpdate() {
-      return request.auth == null
-        && resource.data.approvalStatus == 'pending'
+      return resource.data.approvalStatus == 'pending'
         && resource.data.approvalToken is string
         && request.resource.data.approvalProof == resource.data.approvalToken
         && request.resource.data.approvalStatus in ['approved', 'changes_requested']
@@ -146,7 +103,64 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'approvalProof',
           'approvalStatus',
+          'approvalNote',
           'status',
+          'updatedAt'
+        ]);
+    }
+
+    function isSellerRevisionUpdate() {
+      return (isAdmin() || (isSeller() && resource.data.sellerUid == request.auth.uid))
+        && resource.data.approvalStatus == 'changes_requested'
+        && request.resource.data.approvalStatus == 'pending'
+        && request.resource.data.status == 'approval'
+        && request.resource.data.designVersion == resource.data.designVersion + 1
+        && request.resource.data.approvalToken is string
+        && request.resource.data.approvalToken != resource.data.approvalToken
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'colorChoices',
+          'logos',
+          'texts',
+          'finalImages',
+          'finalImageUrl',
+          'designVersion',
+          'designHistory',
+          'approvalToken',
+          'approvalStatus',
+          'approvalProof',
+          'approvalNote',
+          'approvalRespondedAt',
+          'status',
+          'expireAt',
+          'updatedAt'
+        ]);
+    }
+
+    function isSellerTechnicalSheetUpdate() {
+      return (isAdmin() || (isSeller() && resource.data.sellerUid == request.auth.uid))
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'technicalSheet',
+          'updatedAt'
+        ]);
+    }
+
+    function isSellerSummaryRevisionUpdate(uid) {
+      return (isAdmin() || (isSeller() && request.auth.uid == uid))
+        && resource.data.approvalStatus == 'changes_requested'
+        && request.resource.data.approvalStatus == 'pending'
+        && request.resource.data.status == 'approval'
+        && request.resource.data.designVersion == resource.data.designVersion + 1
+        && request.resource.data.approvalToken is string
+        && request.resource.data.approvalToken != resource.data.approvalToken
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'approvalToken',
+          'approvalStatus',
+          'approvalProof',
+          'approvalNote',
+          'designVersion',
+          'finalImageUrl',
+          'status',
+          'expireAt',
           'updatedAt'
         ]);
     }
@@ -163,9 +177,10 @@ service cloud.firestore {
         && request.resource.data.colorChoices is map
         && request.resource.data.logos is list
         && request.resource.data.finalImages is map;
-      allow read: if isAdmin() || isProduction();
+      allow get: if isAdmin() || isProduction() || (isSeller() && resource.data.sellerUid == request.auth.uid);
+      allow list: if isAdmin() || isProduction();
       allow delete: if isAdmin();
-      allow update: if isAdmin() || isProductionOrderUpdate() || isPublicApprovalUpdate();
+      allow update: if isAdmin() || isProductionOrderUpdate() || isPublicApprovalUpdate() || isSellerRevisionUpdate() || isSellerTechnicalSheetUpdate();
     }
 
     match /sellerOrders/{uid}/orders/{orderId} {
@@ -175,7 +190,10 @@ service cloud.firestore {
         && request.resource.data.sellerUid == uid
         && request.resource.data.orderId == orderId
         && request.resource.data.displayCode is string;
-      allow update: if isAdmin() || isProductionSellerSummaryUpdate() || isPublicSellerSummaryApprovalUpdate();
+      allow update: if isAdmin()
+        || isProductionSellerSummaryUpdate()
+        || isPublicSellerSummaryApprovalUpdate()
+        || isSellerSummaryRevisionUpdate(uid);
       allow delete: if isAdmin();
     }
 
@@ -192,11 +210,11 @@ service cloud.firestore {
     match /approvalPreviews/{token} {
       allow get: if true;
       allow list: if false;
-      allow create: if canSell()
-        && request.resource.data.sellerUid == request.auth.uid
-        && request.resource.data.orderId is string;
-      allow update: if request.auth == null
-        && resource.data.status == 'pending'
+      allow create: if isAdmin()
+        || (isSeller()
+          && request.resource.data.sellerUid == request.auth.uid
+          && request.resource.data.orderId is string);
+      allow update: if resource.data.status == 'pending'
         && request.resource.data.status in ['approved', 'changes_requested']
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           'status',
@@ -228,11 +246,6 @@ service cloud.firestore {
     }
 
     match /admins/{uid} {
-      allow read: if isSignedIn() && request.auth.uid == uid;
-      allow write: if false;
-    }
-
-    match /usuarios/{uid} {
       allow read: if isSignedIn() && request.auth.uid == uid;
       allow write: if false;
     }

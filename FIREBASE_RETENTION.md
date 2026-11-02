@@ -25,7 +25,7 @@ A aprovação pública usa um token aleatório como ID do documento. `list` é b
 
 ### Cloud Storage
 
-Aplicar o arquivo `storage-lifecycle.json` ao bucket `personalizamartinpel.firebasestorage.app`. A regra remove somente objetos de `final-renders/` com mais de 90 dias. A biblioteca deduplicada de logos não é apagada, pois serve para pedidos futuros sem novos uploads.
+Aplicar o arquivo `storage-lifecycle.json` ao bucket `personalizakoleni.firebasestorage.app`. A regra remove somente objetos de `final-renders/` com mais de 90 dias. A biblioteca deduplicada de logos não é apagada, pois serve para pedidos futuros sem novos uploads.
 
 ## Estratégias de economia já aplicadas
 

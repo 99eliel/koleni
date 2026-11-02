@@ -28,9 +28,20 @@ function compactLogo(logo) {
     sourcePage: logo.sourcePage || 1,
     sourcePageCount: logo.sourcePageCount || 1,
     backgroundRemoved: Boolean(logo.backgroundRemoved),
-    placementLabel: logo.placementLabel || '',
-    widthCm: Number(logo.widthCm) || null,
     position: logo.position || null,
+  };
+}
+
+function compactText(item) {
+  return {
+    type: 'text',
+    text: item.text || '',
+    color: item.color || '#111827',
+    fontFamily: item.fontFamily || 'Arial',
+    fontWeight: item.fontWeight || '700',
+    fontStyle: item.fontStyle || 'normal',
+    fontSize: Number(item.fontSize) || 56,
+    position: item.position || null,
   };
 }
 
@@ -48,6 +59,7 @@ export async function saveCustomerOrderSnapshot({
   garmentName,
   colorChoices,
   logos,
+  texts,
   sizeGrid,
   quantity,
 }) {
@@ -69,6 +81,7 @@ export async function saveCustomerOrderSnapshot({
       garmentName,
       colorChoices: colorChoices ?? {},
       logos: uniqueLogos,
+      texts: (texts ?? []).map(compactText),
       sizeGrid: sizeGrid ?? {},
       quantity: quantity ?? null,
     },

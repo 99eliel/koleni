@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /__/functions/
+
+Sitemap: https://99eliel.github.io/koleni/google-sitemap.xml

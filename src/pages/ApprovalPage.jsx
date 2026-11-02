@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react';
-import { doc, getDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
+import { useEffect, useMemo, useState } from 'react';
+import { doc, getDoc, serverTimestamp, updateDoc, writeBatch } from 'firebase/firestore';
 import { useParams } from 'react-router-dom';
 import MartinpelBrand from '../components/MartinpelBrand';
 import { db } from '../lib/firebase';
 import '../approval.css';
+
+const VIEW_LABELS = { front: 'Foto 1', back: 'Foto 2', combined: 'Foto 3' };
 
 export default function ApprovalPage() {
   const { orderId, token } = useParams();
@@ -13,6 +15,12 @@ export default function ApprovalPage() {
   const [note, setNote] = useState('');
   const [error, setError] = useState('');
   const [decision, setDecision] = useState('');
+
+  const artworks = useMemo(() => {
+    const items = Object.entries(preview?.finalImages || {}).filter(([, url]) => Boolean(url));
+    if (!items.length && preview?.finalImageUrl) return [['final', preview.finalImageUrl]];
+    return items;
+  }, [preview]);
 
   useEffect(() => {
     let active = true;
@@ -43,31 +51,38 @@ export default function ApprovalPage() {
     setBusy(true);
     setError('');
     try {
-      const batch = writeBatch(db);
       const nextStatus = nextDecision === 'approved' ? 'approved' : 'approval';
+      const cleanNote = note.trim();
+
+      const batch = writeBatch(db);
       batch.update(doc(db, 'orders', orderId), {
         approvalProof: token,
         approvalStatus: nextDecision,
-        approvalNote: note.trim(),
+        approvalNote: cleanNote,
         approvalRespondedAt: serverTimestamp(),
         status: nextStatus,
         updatedAt: serverTimestamp(),
       });
       batch.update(doc(db, 'approvalPreviews', token), {
         status: nextDecision,
-        note: note.trim(),
+        note: cleanNote,
         respondedAt: serverTimestamp(),
       });
+      await batch.commit();
+
+      setDecision(nextDecision);
+
       if (preview?.sellerUid) {
-        batch.update(doc(db, 'sellerOrders', preview.sellerUid, 'orders', orderId), {
+        updateDoc(doc(db, 'sellerOrders', preview.sellerUid, 'orders', orderId), {
           approvalProof: token,
           approvalStatus: nextDecision,
+          approvalNote: cleanNote,
           status: nextStatus,
           updatedAt: serverTimestamp(),
+        }).catch((syncError) => {
+          console.warn('Não foi possível sincronizar o resumo do vendedor.', syncError);
         });
       }
-      await batch.commit();
-      setDecision(nextDecision);
     } catch (err) {
       setError(`Não foi possível registrar a resposta: ${err.message}`);
     } finally {
@@ -96,7 +111,7 @@ export default function ApprovalPage() {
         <div className="approval-heading">
           <span>Pedido {preview?.displayCode || orderId}</span>
           <h1>Confira a personalização</h1>
-          <p>Esta página serve somente para aprovar a arte montada pela equipe Martinpel. Nenhuma configuração do sistema fica disponível aqui.</p>
+          <p>Confira todas as fotos abaixo. A aprovação vale para esta versão completa do layout da peça.</p>
         </div>
 
         <div className="approval-meta">
@@ -106,19 +121,25 @@ export default function ApprovalPage() {
           <div><span>Versão</span><strong>V{preview?.designVersion || 1}</strong></div>
         </div>
 
-        <div className="approval-art">
-          {preview?.finalImageUrl ? <img src={preview.finalImageUrl} alt="Arte final para aprovação" /> : <div>Arte indisponível</div>}
+        <div className={`approval-art-grid ${artworks.length === 1 ? 'is-single' : ''}`}>
+          {artworks.length > 0 ? artworks.map(([imageView, url], index) => (
+            <figure className="approval-art" key={imageView}>
+              <img src={url} alt={`Arte para aprovação - ${VIEW_LABELS[imageView] || `Foto ${index + 1}`}`} />
+              <figcaption>{VIEW_LABELS[imageView] || `Foto ${index + 1}`}</figcaption>
+            </figure>
+          )) : <div className="approval-art"><div>Arte indisponível</div></div>}
         </div>
 
         {decision ? (
           <div className={`approval-result ${decision === 'approved' ? 'approved' : 'changes'}`}>
             <strong>{decision === 'approved' ? '✓ Arte aprovada' : '↺ Alteração solicitada'}</strong>
-            <p>{decision === 'approved' ? 'A Martinpel já pode seguir com o fluxo interno deste pedido.' : 'A equipe Martinpel recebeu sua solicitação de alteração.'}</p>
+            <p>{decision === 'approved' ? 'A Koleni já pode seguir com o fluxo interno deste pedido.' : 'A equipe Koleni recebeu sua solicitação de alteração.'}</p>
+            {decision === 'changes_requested' && note && <p><strong>Solicitação registrada:</strong> {note}</p>}
           </div>
         ) : (
           <>
             <label className="approval-note">Observação para a equipe <span>(necessária apenas se pedir alteração)</span>
-              <textarea rows="3" value={note} onChange={(event) => setNote(event.target.value)} placeholder="Ex.: aumentar a logo do peito; trocar a cor da manga..." disabled={busy} />
+              <textarea rows="3" value={note} onChange={(event) => setNote(event.target.value)} placeholder="Ex.: aumentar a logo na Foto 2; trocar a cor da manga; alterar o número..." disabled={busy} />
             </label>
             {error && <div className="approval-inline-error">{error}</div>}
             <div className="approval-actions">
@@ -128,7 +149,7 @@ export default function ApprovalPage() {
           </>
         )}
 
-        <footer>Martinpel · Aprovação vinculada somente a este pedido e a esta versão da arte.</footer>
+        <footer>Koleni · Aprovação vinculada somente a este pedido e a esta versão completa da arte.</footer>
       </section>
     </main>
   );

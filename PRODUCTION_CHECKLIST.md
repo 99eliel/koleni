@@ -1,15 +1,17 @@
-# Checklist de entrada em produção — Martinpel
+# Checklist de entrada em produção — Koleni
 
 Este arquivo registra o que precisa estar concluído antes de liberar o sistema para uso diário da equipe.
 
 ## 1. Código e segurança
 
-- [x] Firebase Hosting configurado.
+- [ ] Firebase Hosting configurado para Koleni (se for utilizado).
 - [x] Login por e-mail e senha.
 - [x] Recuperação de senha pelo Firebase Authentication.
 - [x] Perfis em `staff/{uid}` com funções `admin`, `seller` e `production`.
 - [x] Bloqueio por `active: false`.
 - [x] Área administrativa de Equipe em `#/admin/equipe`.
+- [x] Criação de novos funcionários diretamente pelo painel, sem copiar UID.
+- [x] E-mail para o funcionário definir/redefinir a própria senha.
 - [x] Compatibilidade temporária com o administrador antigo em `admins/{uid}`.
 - [x] Firestore Rules separadas por função.
 - [x] Storage Rules separadas por função.
@@ -23,15 +25,16 @@ Este arquivo registra o que precisa estar concluído antes de liberar o sistema 
 - [ ] Publicar `storage.rules`.
 - [ ] Publicar a versão atual do Hosting.
 - [ ] Abrir `#/admin/equipe` e migrar a conta administrativa atual para `staff/{uid}`.
-- [ ] Criar no Firebase Authentication cada funcionário real.
-- [ ] Copiar o UID de cada usuário e vinculá-lo em Admin > Equipe.
+- [ ] Confirmar que E-mail/Senha está habilitado no Firebase Authentication.
+- [ ] Criar um funcionário de teste pelo próprio Admin > Equipe.
+- [ ] Confirmar recebimento do e-mail de definição de senha.
 - [ ] Testar um usuário Vendedor.
 - [ ] Testar um usuário Produção.
 - [ ] Testar um usuário Bloqueado.
 
 ## 3. Storage / navegador
 
-- [ ] Aplicar `storage-cors.json` ao bucket `personalizamartinpel.firebasestorage.app`.
+- [ ] Aplicar `storage-cors.json` ao bucket `personalizakoleni.firebasestorage.app`.
 - [ ] Testar troca de cores claras, incluindo branco `#FFFFFF`.
 - [ ] Testar logo PNG/JPG/WEBP.
 - [ ] Testar PDF vetorial.
@@ -40,7 +43,7 @@ Este arquivo registra o que precisa estar concluído antes de liberar o sistema 
 ## 4. Primeiro pedido real
 
 - [ ] Criar o primeiro pedido completo.
-- [ ] Confirmar código profissional `MP-000001` ou próximo número disponível.
+- [ ] Confirmar código profissional `KL-000001` ou próximo número disponível.
 - [ ] Confirmar grade por letras.
 - [ ] Confirmar grade numérica.
 - [ ] Confirmar grade personalizada.

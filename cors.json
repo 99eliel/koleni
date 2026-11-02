@@ -1,8 +1,8 @@
 [
   {
-    "origin": ["*"],
+    "origin": ["https://99eliel.github.io"],
     "method": ["GET", "HEAD"],
-    "responseHeader": ["Content-Type", "Cache-Control"],
+    "responseHeader": ["Content-Type"],
     "maxAgeSeconds": 3600
   }
 ]

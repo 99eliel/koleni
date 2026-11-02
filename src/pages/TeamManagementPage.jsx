@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AdminAuth from '../components/AdminAuth';
 import MartinpelBrand from '../components/MartinpelBrand';
+import { createStaffAccount } from '../lib/staffAccountProvisioning';
 import { listStaff, saveStaffProfile, setStaffActive, setStaffRole, STAFF_ROLES } from '../lib/staffRepo';
 
-const EMPTY_FORM = { uid: '', name: '', email: '', role: 'seller', active: true };
+const EMPTY_FORM = { name: '', email: '', password: '', confirmPassword: '', role: 'seller', active: true };
 
 function TeamManagement({ user, profile, legacyAccess, logout }) {
   const [members, setMembers] = useState([]);
@@ -53,20 +54,25 @@ function TeamManagement({ user, profile, legacyAccess, logout }) {
 
   async function submit(event) {
     event.preventDefault();
-    const cleanUid = form.uid.trim();
-    if (cleanUid === user.uid && (form.role !== 'admin' || form.active !== true)) {
-      setError('Sua própria conta deve permanecer ativa como Administrador.');
-      return;
-    }
-
     setSaving(true);
     setError('');
     setMessage('');
+
     try {
-      await saveStaffProfile(cleanUid, form);
+      if (form.password.length < 8) throw new Error('A senha deve ter pelo menos 8 caracteres.');
+      if (form.password !== form.confirmPassword) throw new Error('As senhas digitadas não conferem.');
+
+      const result = await createStaffAccount({
+        name: form.name,
+        email: form.email,
+        password: form.password,
+        role: form.role,
+        active: form.active,
+      });
+
       setForm(EMPTY_FORM);
       await load();
-      setMessage('Membro da equipe salvo com sucesso.');
+      setMessage(`Acesso criado para ${result.email}. O funcionário já pode entrar diretamente com a senha que você definiu.`);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -81,9 +87,11 @@ function TeamManagement({ user, profile, legacyAccess, logout }) {
     }
     setActionUid(member.uid);
     setError('');
+    setMessage('');
     try {
       await setStaffRole(member.uid, role);
       setMembers((items) => items.map((item) => item.uid === member.uid ? { ...item, role } : item));
+      setMessage(`Função de ${member.name || member.email} atualizada para ${STAFF_ROLES[role]}.`);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -98,10 +106,12 @@ function TeamManagement({ user, profile, legacyAccess, logout }) {
     }
     setActionUid(member.uid);
     setError('');
+    setMessage('');
     try {
       const active = member.active !== true;
       await setStaffActive(member.uid, active);
       setMembers((items) => items.map((item) => item.uid === member.uid ? { ...item, active } : item));
+      setMessage(`${member.name || member.email} foi ${active ? 'ativado' : 'bloqueado'} no sistema.`);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -123,7 +133,7 @@ function TeamManagement({ user, profile, legacyAccess, logout }) {
         <div>
           <p className="eyebrow">Segurança e acessos</p>
           <h1>Equipe Koleni</h1>
-          <p>Somente usuários presentes aqui, ativos e com a função correta, podem usar as áreas internas do sistema.</p>
+          <p>Crie funcionários, defina a senha inicial, escolha a função e libere o acesso imediatamente.</p>
         </div>
         <div className="team-summary">
           <strong>{members.filter((member) => member.active === true).length}</strong>
@@ -135,7 +145,7 @@ function TeamManagement({ user, profile, legacyAccess, logout }) {
         <section className="panel team-migration-card">
           <div>
             <strong>Migrar sua conta administrativa</strong>
-            <span>Sua conta ainda usa o cadastro antigo em admins/{'{uid}'}. Migre agora para staff/{'{uid}'} antes de removermos a compatibilidade.</span>
+            <span>Sua conta ainda usa o cadastro antigo. Migre agora para a nova gestão de equipe.</span>
           </div>
           <button className="button button-primary" type="button" onClick={migrateCurrentAdmin} disabled={saving}>
             {saving ? 'Migrando…' : 'Migrar minha conta'}
@@ -148,26 +158,43 @@ function TeamManagement({ user, profile, legacyAccess, logout }) {
       <section className="team-layout">
         <form className="panel team-form" onSubmit={submit}>
           <div>
-            <p className="eyebrow">Novo acesso</p>
-            <h2>Vincular usuário</h2>
-            <p>Crie primeiro o usuário no Firebase Authentication e cole aqui o UID gerado.</p>
+            <p className="eyebrow">Novo funcionário</p>
+            <h2>Criar acesso</h2>
+            <p>Digite a senha que o funcionário usará. Nenhum e-mail de criação de senha será enviado.</p>
           </div>
-          <label>UID do Firebase Authentication
-            <input value={form.uid} onChange={(event) => setForm((current) => ({ ...current, uid: event.target.value }))} placeholder="Ex.: kP7...9xQ" disabled={saving} />
-          </label>
+
           <label>Nome do funcionário
-            <input value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} placeholder="Nome completo" disabled={saving} />
+            <input value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} placeholder="Nome completo" autoComplete="name" disabled={saving} required />
           </label>
-          <label>E-mail
-            <input type="email" value={form.email} onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))} placeholder="vendedor@martinpel.com.br" disabled={saving} />
+
+          <label>E-mail de acesso
+            <input type="email" value={form.email} onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))} placeholder="vendedor@martinpel.com.br" autoComplete="email" disabled={saving} required />
           </label>
+
+          <label>Senha
+            <input type="password" minLength="8" value={form.password} onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))} placeholder="Digite a senha do funcionário" autoComplete="new-password" disabled={saving} required />
+          </label>
+
+          <label>Confirmar senha
+            <input type="password" minLength="8" value={form.confirmPassword} onChange={(event) => setForm((current) => ({ ...current, confirmPassword: event.target.value }))} placeholder="Digite a mesma senha novamente" autoComplete="new-password" disabled={saving} required />
+          </label>
+
           <label>Função
             <select value={form.role} onChange={(event) => setForm((current) => ({ ...current, role: event.target.value }))} disabled={saving}>
               {Object.entries(STAFF_ROLES).map(([role, label]) => <option key={role} value={role}>{label}</option>)}
             </select>
           </label>
-          <label className="team-active-check"><input type="checkbox" checked={form.active} onChange={(event) => setForm((current) => ({ ...current, active: event.target.checked }))} disabled={saving} /> Liberar acesso imediatamente</label>
-          <button className="button button-primary" type="submit" disabled={saving}>{saving ? 'Salvando…' : 'Salvar acesso'}</button>
+
+          <label className="team-active-check">
+            <input type="checkbox" checked={form.active} onChange={(event) => setForm((current) => ({ ...current, active: event.target.checked }))} disabled={saving} />
+            Liberar acesso imediatamente
+          </label>
+
+          <button className="button button-primary" type="submit" disabled={saving}>
+            {saving ? 'Criando acesso…' : 'Criar acesso'}
+          </button>
+
+          <small className="team-form-note">A senha vai direto para o Firebase Authentication e não é salva no Firestore.</small>
         </form>
 
         <section className="panel team-list-panel">
@@ -176,7 +203,7 @@ function TeamManagement({ user, profile, legacyAccess, logout }) {
             <button className="button button-secondary" type="button" onClick={load} disabled={loading}>{loading ? 'Atualizando…' : 'Atualizar'}</button>
           </div>
 
-          {!loading && members.length === 0 && <div className="team-empty">Nenhum perfil em staff ainda. Migre sua conta e cadastre a equipe.</div>}
+          {!loading && members.length === 0 && <div className="team-empty">Nenhum funcionário cadastrado ainda.</div>}
 
           <div className="team-list">
             {members.map((member) => {
@@ -186,17 +213,25 @@ function TeamManagement({ user, profile, legacyAccess, logout }) {
                 <article className={`team-member ${member.active === true ? '' : 'is-blocked'}`} key={member.uid}>
                   <div className="team-member-main">
                     <div className="team-avatar">{String(member.name || member.email || '?').slice(0, 1).toUpperCase()}</div>
-                    <div><strong>{member.name || 'Sem nome'}</strong><span>{member.email || 'Sem e-mail'}</span><code>{member.uid}</code></div>
+                    <div>
+                      <strong>{member.name || 'Sem nome'}</strong>
+                      <span>{member.email || 'Sem e-mail'}</span>
+                      <small>{STAFF_ROLES[member.role] || 'Função não definida'}</small>
+                    </div>
                   </div>
+
                   <div className="team-member-controls">
-                    <select value={member.role || 'seller'} onChange={(event) => changeRole(member, event.target.value)} disabled={working || own}>
+                    <select value={member.role || 'seller'} onChange={(event) => changeRole(member, event.target.value)} disabled={working || own} aria-label={`Função de ${member.name || member.email}`}>
                       {Object.entries(STAFF_ROLES).map(([role, label]) => <option key={role} value={role}>{label}</option>)}
                     </select>
                     <button className={`button ${member.active === true ? 'button-secondary' : 'button-success'}`} type="button" onClick={() => toggleActive(member)} disabled={working || own}>
                       {working ? 'Salvando…' : member.active === true ? 'Bloquear' : 'Ativar'}
                     </button>
                   </div>
-                  <div className={`team-status ${member.active === true ? 'is-active' : 'is-blocked'}`}>{member.active === true ? 'Ativo' : 'Bloqueado'}{own ? ' · sua conta' : ''}</div>
+
+                  <div className={`team-status ${member.active === true ? 'is-active' : 'is-blocked'}`}>
+                    {member.active === true ? 'Ativo' : 'Bloqueado'}{own ? ' · sua conta' : ''}
+                  </div>
                 </article>
               );
             })}

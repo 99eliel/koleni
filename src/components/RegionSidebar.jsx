@@ -14,7 +14,7 @@ export default function RegionSidebar({
 }) {
   const [dragId, setDragId] = useState(null);
   const items = [...regions]
-    .filter((region) => region.view === view)
+    .filter((region) => region.view === view && !region.deleted)
     .sort((a, b) => (b.zIndex ?? 0) - (a.zIndex ?? 0));
 
   function dropOn(targetId) {
@@ -25,6 +25,22 @@ export default function RegionSidebar({
     orderedIds.splice(to, 0, orderedIds.splice(from, 1)[0]);
     onReorder(orderedIds);
     setDragId(null);
+  }
+
+  function removeRegion(region) {
+    const confirmed = window.confirm(
+      `Excluir a região “${region.label}”?\n\nEla será removida definitivamente da peça quando você clicar em “Salvar peça”.`,
+    );
+    if (!confirmed) return;
+
+    if (visibleIds.has(region.id)) onToggleVisible(region.id);
+
+    onUpdateRegion(region.id, {
+      deleted: true,
+      view: '__deleted__',
+      polygons: region.polygons?.length ? region.polygons : [[]],
+    });
+    onSelect(null);
   }
 
   return (
@@ -72,6 +88,22 @@ export default function RegionSidebar({
 
             {selectedRegionId === region.id && (
               <div className="region-actions" onClick={(event) => event.stopPropagation()}>
+                <label
+                  style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 9, fontSize: '.75rem', fontWeight: 800, color: '#475569' }}
+                  onPointerDown={(event) => event.stopPropagation()}
+                >
+                  Nome da região
+                  <input
+                    type="text"
+                    value={region.label}
+                    placeholder="Nome da região"
+                    onChange={(event) => onUpdateRegion(region.id, { label: event.target.value })}
+                    onKeyDown={(event) => event.stopPropagation()}
+                    draggable={false}
+                    style={{ width: '100%', padding: '8px 9px', border: '1px solid #cbd5e1', borderRadius: 8, background: '#fff', font: 'inherit', color: '#0f172a' }}
+                  />
+                </label>
+
                 <label className="lock-toggle">
                   <input
                     type="checkbox"
@@ -84,6 +116,14 @@ export default function RegionSidebar({
                   <button type="button" className="mini-button" onClick={() => onEdit(region.id)}>Editar pontos</button>
                   <button type="button" className="mini-button" onClick={() => onAddPart(region.id)}>+ Outra parte</button>
                 </div>
+                <button
+                  type="button"
+                  className="mini-button order-delete-button"
+                  style={{ width: '100%', marginTop: 7 }}
+                  onClick={() => removeRegion(region)}
+                >
+                  Excluir região
+                </button>
               </div>
             )}
           </div>

@@ -5,8 +5,12 @@ const GARMENT_LIST_CACHE_MS = 5 * 60 * 1000;
 let listCache = { at: 0, items: null };
 const garmentCache = new Map();
 
+function isActiveRegion(region) {
+  return Boolean(region) && !region.deleted && region.view !== '__deleted__';
+}
+
 function serializeRegions(regions = []) {
-  return regions.map((region) => ({
+  return regions.filter(isActiveRegion).map((region) => ({
     ...region,
     polygons: (region.polygons ?? []).map((polygon) => ({
       points: Array.isArray(polygon) ? polygon : (polygon?.points ?? []),
@@ -15,7 +19,7 @@ function serializeRegions(regions = []) {
 }
 
 function deserializeRegions(regions = []) {
-  return regions.map((region) => ({
+  return regions.filter(isActiveRegion).map((region) => ({
     ...region,
     polygons: (region.polygons ?? []).map((polygon) => (
       Array.isArray(polygon) ? polygon : (Array.isArray(polygon?.points) ? polygon.points : [])
