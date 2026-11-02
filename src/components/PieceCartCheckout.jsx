@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { getCustomerByWhatsapp, saveCustomerOrderSnapshot } from '../lib/customerRepo';
 import { createOrder } from '../lib/orderRepo';
 import { readPieceCart, removePieceFromCart, clearPieceCart, cartQuantity } from '../lib/multiPieceCart';
+import { readSimulatorQuoteDraft, clearSimulatorQuoteDraft } from '../lib/simulatorQuoteDraft';
 import '../piece-cart.css';
 
 export default function PieceCartCheckout({ staffUser }) {
@@ -16,6 +17,7 @@ export default function PieceCartCheckout({ staffUser }) {
   const [busy, setBusy] = useState(false);
   const [lookupBusy, setLookupBusy] = useState(false);
   const [error, setError] = useState('');
+  const simulatedQuote = readSimulatorQuoteDraft(uid, items);
 
   useEffect(() => {
     const refresh = () => setItems(readPieceCart(uid));
@@ -61,6 +63,7 @@ export default function PieceCartCheckout({ staffUser }) {
       const first = current[0];
       const { id: cartItemId, ...firstData } = first;
       const total = cartQuantity(current);
+      const quote = readSimulatorQuoteDraft(uid, current);
       const firstImage = first.finalImageUrl || Object.values(first.finalImages || {}).find(Boolean) || '';
       const id = await createOrder({
         ...firstData,
@@ -71,6 +74,7 @@ export default function PieceCartCheckout({ staffUser }) {
         sellerEmail: staffUser?.email || '',
         quantity: total,
         items: current,
+        ...(quote ? { quote } : {}),
         finalImageUrl: firstImage,
       });
       try {
@@ -90,6 +94,7 @@ export default function PieceCartCheckout({ staffUser }) {
         console.warn('Pedido salvo; histórico de cliente não sincronizado:', snapshotError);
       }
       clearPieceCart(uid);
+      clearSimulatorQuoteDraft(uid);
       navigate(`/ficha-tecnica/${id}`);
     } catch (err) {
       setError(err.message || 'Não foi possível finalizar o pedido. As peças foram mantidas no carrinho.');
@@ -103,7 +108,10 @@ export default function PieceCartCheckout({ staffUser }) {
   return <section className="piece-cart panel" aria-label="Peças adicionadas ao pedido">
     <header className="piece-cart-heading">
       <div><span>Pedido em montagem</span><h2>{items.length} {items.length === 1 ? 'modelo' : 'modelos'} · {cartQuantity(items)} peças</h2><p>Personalize outros modelos ou finalize tudo com um único código.</p></div>
-      <button type="button" className="button button-primary" onClick={() => setShowCheckout((s) => !s)} disabled={busy}>{showCheckout ? 'Fechar' : 'Finalizar pedido completo'}</button>
+      <div className="piece-cart-primary-actions">
+          <Link className="button button-secondary" to="/simulador">Simular preços</Link>
+          <button type="button" className="button button-primary" onClick={() => setShowCheckout((s) => !s)} disabled={busy}>{showCheckout ? 'Fechar' : 'Finalizar pedido completo'}</button>
+        </div>
     </header>
     <div className="piece-cart-list">
       {items.map((item, index) => <div className="piece-cart-entry" key={item.id || index}>
@@ -112,6 +120,11 @@ export default function PieceCartCheckout({ staffUser }) {
         <button type="button" className="button button-secondary" onClick={() => remove(item.id)} disabled={busy} aria-label={`Retirar ${item.garmentName} do pedido`}>Remover</button>
       </div>)}
     </div>
+    {simulatedQuote && <div className="piece-cart-simulation">
+      <span>Preços sugeridos aplicados da tabela Koleni</span>
+      <strong>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(simulatedQuote.total)}</strong>
+      <Link to="/simulador">Recalcular</Link>
+    </div>}
     {error && <div className="notice notice-error">{error}</div>}
     {showCheckout && <form className="piece-cart-checkout" onSubmit={finish}>
       <h3>Finalizar pedido · {items.length} modelos</h3>
@@ -122,7 +135,7 @@ export default function PieceCartCheckout({ staffUser }) {
         <label>Nome ou empresa<input required value={customerName} onChange={(e) => setCustomerName(e.target.value)} disabled={busy} placeholder="Nome do cliente" /></label>
       </div>
       {customerFound && <p className="piece-cart-found">Cadastro encontrado: {customerFound.name || 'Cliente recorrente'}</p>}
-      <div className="piece-cart-footer"><strong>{cartQuantity(items)} peças, {items.length} personalizações</strong><button type="submit" className="button button-primary" disabled={busy}>{busy ? 'Gravando pedido…' : 'Confirmar pedido e abrir ficha técnica'}</button></div>
+      <div className="piece-cart-footer"><strong>{cartQuantity(items)} peças, {items.length} personalizações{simulatedQuote ? ' · valor simulado anexado' : ''}</strong><button type="submit" className="button button-primary" disabled={busy}>{busy ? 'Gravando pedido…' : 'Confirmar pedido e abrir ficha técnica'}</button></div>
     </form>}
   </section>;
 }

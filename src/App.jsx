@@ -10,6 +10,7 @@ import ArchivedGarmentsPage from './pages/ArchivedGarmentsPage';
 import CustomizerPage from './pages/CustomizerPage';
 import OrderRevisionPage from './pages/OrderRevisionPage';
 import ProductionPipelinePage from './pages/ProductionPipelinePage';
+import QuoteSimulatorPage from './pages/QuoteSimulatorPage';
 import PublicLandingPage from './pages/PublicLandingPage';
 import SellerOrdersPage from './pages/SellerOrdersPage';
 import TechnicalSheetPage from './pages/TechnicalSheetPage';
@@ -60,6 +61,12 @@ function SellerRoute({ pwaEntry = false }) {
       )}
     </StaffAuth>
   );
+}
+
+function SimulatorRoute() {
+  return <StaffAuth allowedRoles={['seller', 'admin']}>
+    {({ user, profile, isAdmin, logout }) => <QuoteSimulatorPage user={user} profile={profile} isAdmin={isAdmin} logout={logout} />}
+  </StaffAuth>;
 }
 
 function SellerOrdersRoute() {
@@ -115,6 +122,7 @@ export default function App() {
         <Route path="/vendedor" element={<SellerRoute pwaEntry />} />
         <Route path="/customizar/:garmentId" element={<SellerRoute />} />
         <Route path="/meus-pedidos" element={<SellerOrdersRoute />} />
+        <Route path="/simulador" element={<SimulatorRoute />} />
         <Route path="/revisar/:orderId" element={<RevisionRoute />} />
         <Route path="/ficha-tecnica/:orderId" element={<TechnicalSheetRoute />} />
         <Route path="/admin" element={<AdminRoute />} />

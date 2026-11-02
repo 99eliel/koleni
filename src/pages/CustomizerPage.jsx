@@ -80,6 +80,7 @@ function Catalog({ staffUser, isAdmin, logout }) {
           <span className="catalog-kicker">Central de vendas Koleni</span>
           <h1>Monte a personalização junto com o cliente.</h1>
           <p>Escolha uma peça, ajuste as cores e posicione logos, nomes e números livremente antes de registrar o pedido.</p>
+          <Link className="button button-secondary" to="/simulador">Simular orçamento por quantidade</Link>
         </div>
         <div className="catalog-hero-badge"><strong>Atendimento assistido</strong><span>Venda • Layout • Produção</span></div>
       </header>

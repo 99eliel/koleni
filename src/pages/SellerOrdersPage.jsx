@@ -73,6 +73,7 @@ export default function SellerOrdersPage({ user, isAdmin = false, logout }) {
         <MartinpelBrand compact subtitle="Meus pedidos" />
         <div className="seller-orders-actions">
           <Link className="button button-light" to="/">+ Novo atendimento</Link>
+          <Link className="button button-secondary" to="/simulador">Simular orçamento</Link>
           {isAdmin && <Link className="button button-secondary" to="/admin">Admin</Link>}
           <button className="button admin-logout-button" type="button" onClick={logout}>Sair</button>
         </div>

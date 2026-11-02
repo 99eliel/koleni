@@ -20,3 +20,8 @@
 .piece-cart-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;flex-wrap:wrap}
 .piece-cart-found{color:#166534!important}
 @media(max-width:720px){.piece-cart-checkout-fields{grid-template-columns:1fr}.piece-cart-entry{flex-wrap:wrap}.piece-cart-entry .button{flex-basis:100%}}
+
+/* Simulador de preço integrado */
+.piece-cart-primary-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.piece-cart-simulation{display:flex;align-items:center;flex-wrap:wrap;gap:12px;padding:12px 15px;background:#fff5f5;border:1px solid #f1c4c5;border-radius:10px;margin:12px 0}
+.piece-cart-simulation span{color:#555;font-size:13px}.piece-cart-simulation strong{font-size:20px;color:#b51d22}.piece-cart-simulation a{font-size:12px;font-weight:700}

@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Simulador de Orçamento • Área do Vendedor – Koleni Uniformes</title>
+<style>
+:root{--pt:#2A2A2A;--cz:#F2F2F2;--cm:#D9D9D9;--ce:#6B6B6B;--am:#FFF2CC}
+*{box-sizing:border-box}body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:#ECECEC;color:#2A2A2A}
+header{background:#fff;border-bottom:6px solid var(--pt);padding:10px 20px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.lg{width:205px;height:84px;overflow:hidden;flex:none}.lg img{width:260px;margin:-31px 0 0 -28px;display:block}
+header h1{margin:0;font-size:20px;color:var(--pt)}header p{margin:4px 0 0;font-size:13px;color:var(--ce)}
+main{max-width:1000px;margin:auto;padding:14px;display:grid;gap:14px;grid-template-columns:1fr 1fr}
+ @media(max-width:760px){main{grid-template-columns:1fr}} #itb tr.clk{cursor:pointer}#itb tr.clk:hover td{background:#FFF2CC}.dica{font-size:12px;font-weight:normal;color:#6B6B6B}
+.card{background:#fff;border-radius:10px;box-shadow:0 1px 4px #0002;padding:14px}.card h2{margin:0 0 10px;font-size:15px;color:var(--pt);border-bottom:2px solid var(--pt);padding-bottom:6px;text-transform:uppercase}
+.full{grid-column:1/-1}label{display:block;font-size:13px;margin:8px 0 3px;font-weight:600}
+input,select{width:100%;padding:9px;border:1px solid #9A9A9A;border-radius:6px;background:var(--cz);font-size:15px;color:#000}
+.req.vz{background:var(--am);border-color:#D4A800}
+input:focus,select:focus{outline:2px solid var(--pt)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.hide{display:none}
+.big{font-size:32px;font-weight:800;color:#000}.kv{display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid #E5E5E5;font-size:14px}.kv b{white-space:nowrap}
+.bad{background:#2A2A2A;color:#fff;padding:8px;border-radius:6px;font-weight:700;text-align:center;margin-top:8px}
+.tip{background:var(--cz);border-left:4px solid var(--pt);padding:9px;font-size:13px;margin-top:10px;border-radius:4px}
+table{width:100%;border-collapse:collapse;font-size:13px}th{background:var(--pt);color:#fff;padding:6px}td{padding:6px;text-align:right;border-bottom:1px solid #E5E5E5}td:first-child{text-align:left}
+tr.sel td{background:var(--cm);font-weight:700}.tabs{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}.tabs button{flex:1;padding:8px;border:1px solid var(--pt);background:#fff;color:var(--pt);border-radius:6px;cursor:pointer;font-weight:600}
+.tabs button.on{background:var(--pt);color:#fff}.btn{width:100%;margin-top:10px;padding:11px;background:var(--pt);color:#fff;border:0;border-radius:6px;font-size:15px;font-weight:700;cursor:pointer}
+.btn2{background:#fff;color:var(--pt);border:2px solid var(--pt)}.del{background:none;border:0;cursor:pointer;font-size:16px;padding:0}
+#itb td.l{text-align:left}.gt{font-size:18px;font-weight:800}
+footer{text-align:center;font-size:11px;color:var(--ce);padding:10px 0 20px}
+</style>
+<style id="koleni-integrado-style">
+:root{--pt:#161616;--cz:#f7f7f7;--cm:#ddd;--ce:#626262;--am:#fff1d0}
+body{background:#f5f5f5}
+header{border-bottom:5px solid #e33336}
+.card{border:1px solid #e4e4e4;box-shadow:0 8px 22px #0000000b}
+.card h2{border-color:#e33336}
+input:focus,select:focus{outline:2px solid #e33336}
+#koleni-integrar{background:#e33336;color:#fff;border:0;border-radius:8px;padding:13px 18px;cursor:pointer;font-size:15px;font-weight:700;max-width:100%;margin:14px 0}
+#koleni-integrar:hover{background:#bc2329}
+#koleni-integrar:disabled{opacity:.55;cursor:not-allowed}
+#koleni-aviso{font-size:13px;color:#555;margin-top:0;line-height:1.6}
+</style>
+</head><body>
+<header><div class="lg"><img id="logo" alt="Koleni Uniformes"></div><div><h1>Simulador de Orçamento • Área do Vendedor</h1><p>Preencha os campos em AMARELO (obrigatórios) → o preço aparece na hora. Adicione quantos produtos quiser ao orçamento.</p></div></header>
+<main>
+<section class="card"><h2>① O orçamento</h2>
+<label>Cliente / nº do orçamento</label><input id="cli" class="req" placeholder="Ex.: Empresa X – Orçamento 123">
+<label>Contato de quem solicitou (nome / telefone)</label><input id="con" class="req" placeholder="Ex.: Maria – (11) 99999-9999"><label>Nome do vendedor</label><input id="ven" class="req" placeholder="Ex.: João">
+<label>Produto</label><select id="prod" class="req"><option value="">Selecione o produto…</option></select>
+<label>Quantidade (peças)</label><input id="qtd" class="req" type="number" min="1" inputmode="numeric" placeholder="Ex.: 50">
+<h2 style="margin-top:16px">② Estampa / bordado</h2>
+<div class="row"><div><label>Tipo de aplicação</label><select id="tipo" class="req"><option value="">Selecione…</option><option>Nenhuma</option><option>Silk</option><option>DTF</option><option>Bordado</option></select></div>
+<div class="ap"><label>Nº de posições na peça</label><select id="pos" class="req"><option value="">Selecione…</option><option>1</option><option>2</option><option>3</option></select></div></div>
+<input type="hidden" id="tam" value="P">
+<div class="silk row"><div><label>Silk – nº de cores</label><select id="cor" class="req"><option value="">Selecione…</option><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
+<div><label>A arte é complexa?</label><select id="esc" class="req"><option value="">Selecione…</option><option value="0">Não</option><option value="1">Sim</option></select></div></div>
+<div class="silk"><label>Silk – tela nova?</label><select id="tela" class="req"><option value="">Selecione…</option><option value="1">Sim</option><option value="0">Não (tela já existe)</option></select></div>
+<div class="bord"><label>Bordado – matriz nova?</label><select id="mat" class="req"><option value="">Selecione…</option><option value="1">Sim</option><option value="0">Não (matriz já existe)</option></select></div>
+</section>
+<section class="card"><h2>💰 Preço deste produto</h2>
+<div style="font-size:13px">Preço sugerido por peça</div><div class="big" id="pp">-</div>
+<div class="kv"><span>Valor total deste produto</span><b id="tot">-</b></div>
+<div class="kv"><span>Faixa de preço aplicada</span><b id="fx">-</b></div>
+<div id="sit"></div>
+<h2 style="margin-top:16px">💳 Condições de pagamento</h2>
+<div class="kv"><span id="lparc"></span><b id="vparc">-</b></div>
+<div class="kv"><span id="lav1"></span><b id="vav1">-</b></div>
+<div class="kv"><span id="lav2"></span><b id="vav2">-</b></div>
+<div class="tip" id="arg"></div>
+<button class="btn" id="add">➕ Adicionar este produto ao orçamento</button>
+</section>
+<section class="card full" id="itens"><h2>🧾 Itens do orçamento <span class="dica">(clique no item para ver a Tabela 1 / 2 / 3)</span></h2>
+<table><thead><tr><th>#</th><th>Produto</th><th>Aplicação</th><th>Qtd</th><th>Preço/peça</th><th>Total</th><th></th></tr></thead><tbody id="itb"></tbody></table>
+<div class="kv gt"><span>TOTAL DO ORÇAMENTO</span><b id="gt">R$ 0,00</b></div>
+<div class="kv"><span id="lgp"></span><b id="gp">-</b></div>
+<div class="kv"><span id="lga"></span><b id="ga">-</b></div>
+<div class="kv"><span>Data do orçamento</span><b id="dt">-</b></div>
+<div class="kv"><span>Prazo de entrega</span><b id="pz">-</b></div>
+<div class="kv"><span>Validade do orçamento</span><b id="vl">-</b></div>
+<button class="btn" id="img">🖼 Gerar imagem do orçamento (com logo)</button>
+<button class="btn" id="xls">📊 Gerar orçamento em Excel (editável)</button>
+<div class="row"><button class="btn btn2" id="wa">📋 Copiar orçamento para WhatsApp</button><button class="btn btn2" id="limpa">🗑 Limpar orçamento</button></div>
+</section>
+<section class="card full"><h2>📉 Preço por quantidade (produto selecionado)</h2>
+<div class="tabs"><button data-t="0" class="on">Tabela 1 • Preço cheio</button><button data-t="1" id="bt2">Tabela 2 • À vista</button><button data-t="2">Tabela 3</button></div>
+<table><thead><tr><th>Quantidade (peças)</th><th>Preço por peça</th><th>Valor total</th><th>Economia x 1ª faixa</th></tr></thead><tbody id="tb"></tbody></table>
+<div class="tip">O preço vale para a faixa: ex.: de 50 a 99 peças usa o preço de 50 peças. Cada produto do orçamento usa a faixa da sua própria quantidade. Arte considerada: até 10 × 10 cm. Abaixo da 1ª faixa (a partir de 1 peça) o preço é calculado com o set-up (acerto, telas, matriz) dividido pelas peças do pedido. Artes maiores: consulte o gestor.</div>
+</section>
+</main>
+<footer>Koleni Uniformes • Tabela gerada em <span id="ger"></span> a partir da planilha de custos. Em caso de dúvida, consulte o gestor.</footer>
+<script>
+var LOGO="./koleni-logo.svg";
+var D={qs:[10,20,50,100,250,500,1000,3000],avista:500/1e4,t3:1000/1e4,parc:3,gerado:"30/10/2026",produtos:[],p:[]};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+$=function(id){return document.getElementById(id)};
+$("logo").src=LOGO;
+D.p=D.p.map(function(o){for(var k in o)o[k]=o[k].map(function(v){return v/100});return o});
+var brl=function(v){return v.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})};
+var pc=function(v){return (v*100).toLocaleString("pt-BR",{maximumFractionDigits:1})+"%"};
+var tab=0,cur=null,IT=[];
+var PRAZO=30,VALID=15,HOJE=new Date(),dbr=function(d){return d.toLocaleDateString("pt-BR")},ATE=new Date(HOJE.getTime()+VALID*864e5);
+var tPz=PRAZO+" dias",tVl=VALID+" dias (válido até "+dbr(ATE)+")";
+$("dt").textContent=dbr(HOJE);$("pz").textContent=tPz;$("vl").textContent=tVl;
+try{localStorage.removeItem("koleni_orc")}catch(e){}try{IT=JSON.parse(sessionStorage.getItem("koleni_orc")||"[]")}catch(e){IT=[]}
+function salva(){try{sessionStorage.setItem("koleni_orc",JSON.stringify(IT))}catch(e){}}
+D.produtos.forEach(function(p,i){$("prod").add(new Option(p,i))});
+$("ger").textContent=D.gerado;
+$("lparc").textContent="Preço sugerido – em até "+D.parc+"x (parcelamento a combinar com o cliente)";
+$("lav1").textContent="À vista ("+pc(D.avista)+" de desconto) – preço por peça";
+$("lav2").textContent="À vista ("+pc(D.avista)+" de desconto) – total";
+$("lgp").textContent="Em até "+D.parc+"x";
+$("lga").textContent="À vista ("+pc(D.avista)+" de desconto) – total";
+$("bt2").textContent="Tabela 2 • À vista ("+pc(D.avista)+")";
+function vis(e){return e.offsetParent!==null}
+function marca(){document.querySelectorAll(".req").forEach(function(e){e.classList.toggle("vz",vis(e)&&!e.value)})}
+function falta(){var n=0;document.querySelectorAll(".req").forEach(function(e){if(e.id!=="cli"&&e.id!=="con"&&e.id!=="ven"&&vis(e)&&!e.value)n++});return n;}
+function key(){var t=$("tipo").value,p=$("pos").value,s=$("tam").value;
+if(t==="Nenhuma")return "N";if(t==="DTF")return "D"+p+s;if(t==="Bordado")return "B"+p+s+$("mat").value;
+return "S"+p+s+$("cor").value+$("esc").value+$("tela").value;}
+function apTxt(){var t=$("tipo").value;if(t==="Nenhuma")return "Sem aplicação";var s=t+" – "+$("pos").value+" posição(ões)";
+if(t==="Silk")s+=", "+$("cor").value+" cor(es)"+($("esc").value==="1"?", arte complexa":"");return s;}
+function idx(q){var k=-1;D.qs.forEach(function(b,i){if(q>=b)k=i});return k;}function pr(a,q){var i=idx(q);if(i<0){if(q<1)return 0;var q0=D.qs[0],q1=D.qs[1],k=(a[0]-a[1])/(1/q0-1/q1);if(!(k>0))return a[0];return Math.round((a[0]-k/q0+k/q)*100)/100;}if(i>=D.qs.length-1)return a[i];var lo=D.qs[i],hi=D.qs[i+1],st=Math.floor((q-lo)/10)*10,v=a[i]+(a[i+1]-a[i])*st/(hi-lo);return Math.max(a[i+1],Math.round(v*100)/100);}
+function faixa(j){return D.qs[j].toLocaleString("pt-BR")+(j<D.qs.length-1?" a "+(D.qs[j+1]-1).toLocaleString("pt-BR"):" ou mais");}
+function limpaPreco(msg){["pp","tot","fx","vparc","vav1","vav2"].forEach(function(x){$(x).textContent="-"});$("arg").textContent="";$("sit").innerHTML="<div class='bad'>"+msg+"</div>";cur=null;}
+function calc(){if(!D.p.length){limpaPreco("Tabela de preços ainda não carregada. Peça ao administrador para importar.");return;}var t=$("tipo").value;
+document.querySelectorAll(".ap").forEach(function(e){e.classList.toggle("hide",t===""||t==="Nenhuma")});
+document.querySelectorAll(".silk").forEach(function(e){e.classList.toggle("hide",t!=="Silk")});
+document.querySelectorAll(".bord").forEach(function(e){e.classList.toggle("hide",t!=="Bordado")});
+marca();
+if(falta()>0){limpaPreco("Preencha os campos em amarelo");$("tb").innerHTML="<tr><td colspan='4'>Escolha o produto e a aplicação para ver a tabela.</td></tr>";return;}
+var arr=D.p[$("prod").value][key()],q=parseInt($("qtd").value)||0,i=idx(q);
+var f=[1,1-D.avista,1-D.t3][tab],h="";
+if(i<0&&q>0){var u0=pr(arr,q);h+="<tr class='sel'><td>"+q.toLocaleString("pt-BR")+" peça(s) (abaixo da 1ª faixa)</td><td>"+brl(u0*f)+"</td><td>"+brl(u0*f*q)+"</td><td>"+pc(u0/arr[0]-1)+"</td></tr>";}D.qs.forEach(function(b,j){var sl=(j===i&&q>0),u=sl?pr(arr,q):arr[j],n=sl?q:b;h+="<tr"+(sl?" class='sel'":"")+"><td>"+(sl?q.toLocaleString("pt-BR")+" peças (faixa "+faixa(j)+")":faixa(j))+"</td><td>"+brl(u*f)+"</td><td>"+brl(u*f*n)+"</td><td>"+((j||sl)&&u!==arr[0]?pc(u/arr[0]-1):"-")+"</td></tr>"});
+$("tb").innerHTML=h;
+if(q<=0){limpaPreco("Informe a quantidade");return;}
+$("sit").innerHTML="";
+var p=pr(arr,q);var fv={};["prod","qtd","tipo","pos","cor","esc","tela","mat"].forEach(function(id){fv[id]=$(id).value});cur={n:$("prod").selectedOptions[0].text,ap:apTxt(),q:q,p:p,f:fv};
+$("pp").textContent=brl(p);$("tot").textContent=brl(p*q);$("fx").textContent=i<0?"Abaixo de "+D.qs[0]+" peças (set-up integral)":faixa(i)+" peças";
+$("vparc").textContent=brl(p*q);$("vav1").textContent=brl(p*(1-D.avista));$("vav2").textContent=brl(p*(1-D.avista)*q);
+$("arg").textContent=i<D.qs.length-1?"💡 Se o cliente fechar "+D.qs[i+1].toLocaleString("pt-BR")+" peças, o preço cai para "+brl(arr[i+1])+" por peça ("+pc(arr[i+1]/p-1)+").":"💡 Quantidade já está na maior faixa de volume.";}
+function total(){var s=0;IT.forEach(function(x){s+=x.p*x.q});return s;}
+function lista(){var h="";IT.forEach(function(x,k){h+="<tr"+(x.f?" class='clk' title='Clique para ver a tabela de preços deste item' onclick='ver("+k+")'":"")+"><td>"+(k+1)+"</td><td class='l'>"+x.n+"</td><td class='l'>"+x.ap+"</td><td>"+x.q.toLocaleString("pt-BR")+"</td><td>"+brl(x.p)+"</td><td>"+brl(x.p*x.q)+"</td><td><button class='del' title='Remover' onclick='event.stopPropagation();rm("+k+")'>❌</button></td></tr>"});
+if(!IT.length)h="<tr><td colspan='7'>Nenhum produto adicionado ainda. Preencha acima e clique em ➕ Adicionar.</td></tr>";
+$("itb").innerHTML=h;var s=total();$("gt").textContent=brl(s);$("gp").textContent=brl(s);$("ga").textContent=brl(s*(1-D.avista));}
+function rm(k){IT.splice(k,1);salva();lista();}function ver(k){var x=IT[k];if(!x||!x.f)return;["prod","qtd","tipo","pos","cor","esc","tela","mat"].forEach(function(id){$(id).value=x.f[id]||""});calc();$("sit").innerHTML="<div class='tip'>Mostrando o item "+(k+1)+" do orçamento. Ele já está na lista – só clique em ➕ Adicionar se quiser incluir outro igual.</div>";$("tb").scrollIntoView({behavior:"smooth",block:"center"});}
+$("add").onclick=function(){if(!cur){alert("Preencha todos os campos em amarelo antes de adicionar.");return;}
+IT.push(cur);salva();lista();["prod","qtd","tipo","pos","cor","esc","tela","mat"].forEach(function(x){$(x).value=""});calc();$("itens").scrollIntoView({behavior:"smooth"});};
+$("limpa").onclick=function(){if(IT.length&&confirm("Apagar todos os itens deste orçamento?")){IT=[];salva();lista();}};
+document.querySelectorAll("input,select").forEach(function(e){e.addEventListener("input",calc);e.addEventListener("change",calc)});
+document.querySelectorAll(".tabs button").forEach(function(b){b.onclick=function(){tab=+b.dataset.t;document.querySelectorAll(".tabs button").forEach(function(x){x.classList.toggle("on",x===b)});calc();}});
+$("wa").onclick=function(){if(!$("cli").value){alert("Preencha o cliente / nº do orçamento.");$("cli").focus();return;}if(!$("con").value){alert("Preencha o contato de quem solicitou.");$("con").focus();return;}if(!$("ven").value){alert("Preencha o nome do vendedor.");$("ven").focus();return;}
+if(!IT.length){alert("Adicione pelo menos um produto ao orçamento.");return;}
+var txt="*Orçamento Koleni Uniformes – "+$("cli").value+"*\nContato: "+$("con").value+"\nVendedor: "+$("ven").value+"\n";
+IT.forEach(function(x,k){txt+="\n"+(k+1)+") "+x.n+"\n   Aplicação: "+x.ap+"\n   "+x.q.toLocaleString("pt-BR")+" peças × "+brl(x.p)+" = "+brl(x.p*x.q)+"\n"});
+var s=total();txt+="\n*TOTAL: "+brl(s)+"*\n\n*Forma de pagamento*\nParcelado em até "+D.parc+"x de "+brl(s/D.parc)+"\nÀ vista com "+pc(D.avista)+" de desconto: "+brl(s*(1-D.avista))+"\n\nData do orçamento: "+dbr(HOJE)+"\nPrazo de entrega: "+tPz+"\nValidade do orçamento: "+tVl;
+if(navigator.clipboard){navigator.clipboard.writeText(txt).then(function(){$("wa").textContent="✅ Copiado!";setTimeout(function(){$("wa").textContent="📋 Copiar orçamento para WhatsApp"},1500)}).catch(function(){prompt("Copie o texto:",txt)});}else prompt("Copie o texto:",txt);};
+function wrap(x,t,w){var p=t.split(" "),l=[],s="";p.forEach(function(q){var z=s?s+" "+q:q;if(x.measureText(z).width>w&&s){l.push(s);s=q}else s=z});l.push(s);return l;}
+function valida(){if(!$("cli").value){alert("Preencha o cliente / nº do orçamento.");$("cli").focus();return false;}if(!$("con").value){alert("Preencha o contato de quem solicitou.");$("con").focus();return false;}if(!$("ven").value){alert("Preencha o nome do vendedor.");$("ven").focus();return false;}
+if(!IT.length){alert("Adicione pelo menos um produto ao orçamento.");return false;}return true;}
+function cropLogo(w){var im=$("logo"),c=document.createElement("canvas");
+var ratio=(im.naturalWidth&&im.naturalHeight)?im.naturalHeight/im.naturalWidth:0.3;
+c.width=w;c.height=Math.round(w*ratio);c.getContext("2d").drawImage(im,0,0,c.width,c.height);return c;}
+function nomeArq(ext){return "Orcamento_Koleni_"+$("cli").value.replace(/[^\wÀ-ú]+/g,"_")+"."+ext;}
+function entrega(b,nm,tipo){var f=null;try{f=new File([b],nm,{type:tipo})}catch(e){}
+if(f&&navigator.canShare&&navigator.canShare({files:[f]})){navigator.share({files:[f],title:"Orçamento Koleni"}).catch(function(){});return true;}
+var a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=nm;document.body.appendChild(a);a.click();a.remove();return false;}
+function gerarImg(){if(!valida())return;
+var c=document.createElement("canvas"),x=c.getContext("2d"),W=900,F="Segoe UI,Arial,sans-serif";x.font="bold 19px "+F;
+var R=IT.map(function(it,k){var l=wrap(x,(k+1)+". "+it.n,440);return {it:it,l:l,h:l.length*24+38}});
+var hi=0;R.forEach(function(r){hi+=r.h});var H=hi+760;c.width=W;c.height=H;
+x.fillStyle="#fff";x.fillRect(0,0,W,H);
+x.drawImage(cropLogo(760),40,20,380,156);
+x.textAlign="right";x.fillStyle="#2A2A2A";x.font="bold 34px "+F;x.fillText("ORÇAMENTO",W-40,85);
+x.font="17px "+F;x.fillStyle="#6B6B6B";x.fillText("Data: "+dbr(HOJE),W-40,118);
+x.fillStyle="#2A2A2A";x.fillRect(0,190,W,6);
+var y=240;x.textAlign="left";x.fillStyle="#000";x.font="bold 21px "+F;x.fillText("Cliente: "+$("cli").value,40,y);
+y+=32;x.font="19px "+F;x.fillText("Contato: "+$("con").value,40,y);y+=30;x.fillText("Vendedor: "+$("ven").value,40,y);y+=30;
+x.fillStyle="#2A2A2A";x.fillRect(40,y,W-80,38);x.fillStyle="#fff";x.font="bold 16px "+F;x.fillText("Produto / aplicação",52,y+25);
+x.textAlign="right";x.fillText("Qtd",600,y+25);x.fillText("Preço/peça",735,y+25);x.fillText("Total",W-52,y+25);y+=38;
+R.forEach(function(r){var b=y+28;x.textAlign="left";x.fillStyle="#000";x.font="bold 19px "+F;r.l.forEach(function(s,i){x.fillText(s,52,b+i*24)});
+x.font="15px "+F;x.fillStyle="#6B6B6B";x.fillText(r.it.ap,52,b+r.l.length*24);
+x.textAlign="right";x.fillStyle="#000";x.font="18px "+F;x.fillText(r.it.q.toLocaleString("pt-BR"),600,b);x.fillText(brl(r.it.p),735,b);x.font="bold 18px "+F;x.fillText(brl(r.it.p*r.it.q),W-52,b);
+y+=r.h;x.fillStyle="#D9D9D9";x.fillRect(40,y-1,W-80,1);});
+y+=22;var s=total();x.fillStyle="#F2F2F2";x.fillRect(40,y,W-80,64);x.fillStyle="#000";x.font="bold 24px "+F;x.textAlign="left";x.fillText("TOTAL DO ORÇAMENTO",58,y+42);x.textAlign="right";x.fillText(brl(s),W-58,y+42);
+function tit(t){x.textAlign="left";x.fillStyle="#2A2A2A";x.font="bold 18px "+F;x.fillText(t,58,y);x.fillRect(58,y+8,W-116,2);}
+y+=104;tit("FORMA DE PAGAMENTO");x.font="18px "+F;x.fillStyle="#000";
+y+=36;x.fillText("• Parcelado em até "+D.parc+"x de "+brl(s/D.parc)+"  (total "+brl(s)+")",58,y);
+var tv="• À vista com "+pc(D.avista)+" de desconto: "+brl(s*(1-D.avista));
+y+=30;x.font="bold 18px "+F;x.fillText(tv,58,y);var wv=x.measureText(tv).width;x.font="18px "+F;x.fillStyle="#6B6B6B";x.fillText("(economia de "+brl(s*D.avista)+")",58+wv+12,y);
+y+=50;tit("CONDIÇÕES");x.font="18px "+F;x.fillStyle="#000";
+y+=36;x.fillText("Data do orçamento: "+dbr(HOJE),58,y);y+=30;x.fillText("Prazo de entrega: "+tPz,58,y);y+=30;x.fillText("Validade do orçamento: "+tVl,58,y);
+x.textAlign="center";x.font="14px "+F;x.fillStyle="#6B6B6B";x.fillText("Koleni Uniformes • Orçamento sujeito a confirmação da arte e disponibilidade.",W/2,H-28);
+c.toBlob(function(b){if(entrega(b,nomeArq("png"),"image/png"))return;
+if(window.ClipboardItem&&navigator.clipboard&&navigator.clipboard.write){navigator.clipboard.write([new ClipboardItem({"image/png":b})]).then(function(){alert("✅ Imagem copiada e baixada! Abra a conversa no WhatsApp e cole (Ctrl+V) ou anexe o arquivo baixado.")}).catch(function(){alert("✅ Imagem baixada! Anexe o arquivo na conversa do WhatsApp.")});}else alert("✅ Imagem baixada! Anexe o arquivo na conversa do WhatsApp.");},"image/png");}
+$("img").onclick=gerarImg;
+var CRC=(function(){var t=[];for(var n=0;n<256;n++){var c=n;for(var k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
+function crc32(d){var c=0xFFFFFFFF;for(var i=0;i<d.length;i++)c=CRC[(c^d[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0;}
+function zip(fs){var enc=new TextEncoder(),parts=[],cd=[],off=0;
+fs.forEach(function(f){var nm=enc.encode(f.n),d=typeof f.d==="string"?enc.encode(f.d):f.d,cr=crc32(d);
+var L=new DataView(new ArrayBuffer(30));L.setUint32(0,0x04034b50,true);L.setUint16(4,20,true);L.setUint16(12,0x5821,true);
+L.setUint32(14,cr,true);L.setUint32(18,d.length,true);L.setUint32(22,d.length,true);L.setUint16(26,nm.length,true);
+parts.push(new Uint8Array(L.buffer),nm,d);
+var C=new DataView(new ArrayBuffer(46));C.setUint32(0,0x02014b50,true);C.setUint16(4,20,true);C.setUint16(6,20,true);C.setUint16(14,0x5821,true);
+C.setUint32(16,cr,true);C.setUint32(20,d.length,true);C.setUint32(24,d.length,true);C.setUint16(28,nm.length,true);C.setUint32(42,off,true);
+cd.push(new Uint8Array(C.buffer),nm);off+=30+nm.length+d.length;});
+var cdl=0;cd.forEach(function(p){cdl+=p.length});
+var E=new DataView(new ArrayBuffer(22));E.setUint32(0,0x06054b50,true);E.setUint16(8,fs.length,true);E.setUint16(10,fs.length,true);E.setUint32(12,cdl,true);E.setUint32(16,off,true);
+return new Blob(parts.concat(cd).concat([new Uint8Array(E.buffer)]),{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});}
+function xe(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function gerarXls(){if(!valida())return;
+var rows={},M=[];function put(r,cell){(rows[r]=rows[r]||[]).push(cell);}
+function S(r,c,v,st){put(r,'<c r="'+c+r+'" t="inlineStr" s="'+(st||0)+'"><is><t xml:space="preserve">'+xe(v)+'</t></is></c>');}
+function N(r,c,v,st){put(r,'<c r="'+c+r+'" s="'+(st||0)+'"><v>'+v+'</v></c>');}
+function Fm(r,c,f,st){put(r,'<c r="'+c+r+'" s="'+(st||0)+'"><f>'+xe(f)+'</f></c>');}
+function E(r,c,st){put(r,'<c r="'+c+r+'" s="'+st+'"/>');}
+S(2,"F","ORÇAMENTO",1);E(2,"G",1);E(2,"H",1);M.push("F2:H2");S(3,"F","Data: "+dbr(HOJE),2);E(3,"G",2);E(3,"H",2);M.push("F3:H3");
+S(6,"A","Cliente: "+$("cli").value,18);M.push("A6:H6");S(7,"A","Contato: "+$("con").value,19);M.push("A7:H7");S(8,"A","Vendedor: "+$("ven").value,19);M.push("A8:H8");var HT={6:24,7:21,8:21};
+var h0=9;HT[h0]=22;["Item","Produto","Foto do modelo","Cor","Aplicação","Qtd","Preço/peça","Total"].forEach(function(t,k){S(h0,"ABCDEFGH"[k],t,4)});
+IT.forEach(function(it,k){var r=h0+1+k;HT[r]=110;N(r,"A",k+1,6);S(r,"B",it.n,5);S(r,"C","Colar foto aqui",24);S(r,"D","",5);S(r,"E",it.ap,13);N(r,"F",it.q,6);N(r,"G",Math.round(it.p*100)/100,7);Fm(r,"H","F"+r+"*G"+r,8);});
+var L=h0+IT.length,t=L+2;S(t,"A","TOTAL DO ORÇAMENTO",9);"BCDEFG".split("").forEach(function(c){E(t,c,9)});M.push("A"+t+":G"+t);Fm(t,"H","SUM(H"+(h0+1)+":H"+L+")",10);HT[t]=26;
+var p=t+2;S(p,"A","FORMA DE PAGAMENTO",3);
+S(p+1,"B","Parcelamento em até "+D.parc+"x ou a combinar",0);
+S(p+2,"B","Total parcelado",0);Fm(p+2,"C","H"+t,20);
+S(p+3,"B","Desconto à vista",0);N(p+3,"C",D.avista,21);
+S(p+4,"B","À vista – total com desconto",3);Fm(p+4,"C","H"+t+"*(1-C"+(p+3)+")",23);HT[p+4]=21;
+var q=p+6;S(q,"A","CONDIÇÕES",3);S(q+1,"B","Data do orçamento",0);S(q+1,"C",dbr(HOJE),0);S(q+2,"B","Prazo de entrega",0);S(q+2,"C",tPz,0);S(q+3,"B","Validade do orçamento",0);S(q+3,"C",tVl,0);
+var o=q+5;S(o,"A","OBSERVAÇÕES",3);"ABCDEFGH".split("").forEach(function(c){E(o+1,c,14);E(o+2,c,14)});M.push("A"+(o+1)+":H"+(o+2));
+S(o+4,"A","Koleni Uniformes • Orçamento sujeito a confirmação da arte e disponibilidade.",16);
+var sd="";Object.keys(rows).map(Number).sort(function(a,b){return a-b}).forEach(function(r){sd+='<row r="'+r+'"'+(HT[r]?' ht="'+HT[r]+'" customHeight="1"':'')+'>'+rows[r].join("")+'</row>'});
+var NS='xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"';
+var XH='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+var sheet=XH+'<worksheet '+NS+'><sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><sheetViews><sheetView workbookViewId="0" showGridLines="0"/></sheetViews><sheetFormatPr defaultRowHeight="15"/>'+
+ '<cols><col min="1" max="1" width="7" customWidth="1"/><col min="2" max="2" width="38" customWidth="1"/><col min="3" max="3" width="24" customWidth="1"/><col min="4" max="4" width="14" customWidth="1"/><col min="5" max="5" width="32" customWidth="1"/><col min="6" max="6" width="9" customWidth="1"/><col min="7" max="7" width="14" customWidth="1"/><col min="8" max="8" width="17" customWidth="1"/></cols>'+
+ '<sheetData>'+sd+'</sheetData><mergeCells count="'+M.length+'">'+M.map(function(m){return '<mergeCell ref="'+m+'"/>'}).join("")+'</mergeCells>'+
+ '<pageMargins left="0.5" right="0.5" top="0.6" bottom="0.6" header="0.3" footer="0.3"/><pageSetup paperSize="9" orientation="portrait" fitToWidth="1" fitToHeight="0"/><drawing r:id="rId1"/></worksheet>';
+function X(n,f,fi,b,al){return '<xf numFmtId="'+n+'" fontId="'+f+'" fillId="'+fi+'" borderId="'+b+'" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1">'+(al?'<alignment '+al+'/>':'')+'</xf>';}
+var VC='vertical="center"';
+var xfs=[X(0,0,0,0),X(0,1,0,0,'horizontal="right"'),X(0,2,0,0,'horizontal="right"'),X(0,3,0,0),X(0,4,2,1,'horizontal="center" '+VC+' wrapText="1"'),X(0,0,0,1,VC+' wrapText="1"'),X(3,0,0,1,'horizontal="center" '+VC),X(164,0,0,1,VC),X(164,3,0,1,VC),X(0,5,3,0,VC),X(164,5,3,0,VC),X(164,0,0,0),X(9,6,0,0),X(0,2,0,1,VC+' wrapText="1"'),X(0,6,4,1,VC+' wrapText="1"'),X(164,5,0,0),X(0,2,0,0),X(0,6,0,0,'horizontal="center"'),X(0,5,0,0,VC),X(0,7,0,0,VC),X(164,0,0,0,'horizontal="left"'),X(9,6,0,0,'horizontal="left"'),X(0,6,0,0,'horizontal="left"'),X(164,5,0,0,'horizontal="left"'),X(0,2,0,1,'horizontal="center" '+VC+' wrapText="1"')];
+var FC=function(b,sz,col){return '<font>'+(b?'<b/>':'')+'<sz val="'+sz+'"/>'+(col?'<color rgb="FF'+col+'"/>':'')+'<name val="Calibri"/></font>';};
+var fill=function(c){return '<fill><patternFill patternType="solid"><fgColor rgb="FF'+c+'"/><bgColor indexed="64"/></patternFill></fill>';};
+var bd='<border><left style="thin"><color rgb="FFBFBFBF"/></left><right style="thin"><color rgb="FFBFBFBF"/></right><top style="thin"><color rgb="FFBFBFBF"/></top><bottom style="thin"><color rgb="FFBFBFBF"/></bottom><diagonal/></border>';
+var styles=XH+'<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="&quot;R$&quot; #,##0.00"/></numFmts>'+
+ '<fonts count="8">'+FC(0,11)+FC(1,22,"2A2A2A")+FC(0,11,"6B6B6B")+FC(1,11)+FC(1,11,"FFFFFF")+FC(1,14)+FC(0,11,"0000FF")+FC(0,13)+'</fonts>'+
+ '<fills count="5"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>'+fill("2A2A2A")+fill("F2F2F2")+fill("FFF2CC")+'</fills>'+
+ '<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border>'+bd+'</borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'+
+ '<cellXfs count="'+xfs.length+'">'+xfs.join("")+'</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
+var lc=cropLogo(600),du=lc.toDataURL("image/png"),bs=atob(du.split(",")[1]),png=new Uint8Array(bs.length);for(var i=0;i<bs.length;i++)png[i]=bs.charCodeAt(i);
+var cx=2000000,cy=Math.round(cx*lc.height/lc.width);
+var RL='http://schemas.openxmlformats.org/officeDocument/2006/relationships',PR='http://schemas.openxmlformats.org/package/2006/relationships';
+var draw=XH+'<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="'+RL+'"><xdr:oneCellAnchor><xdr:from><xdr:col>0</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>0</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from><xdr:ext cx="'+cx+'" cy="'+cy+'"/><xdr:pic><xdr:nvPicPr><xdr:cNvPr id="2" name="Logo Koleni"/><xdr:cNvPicPr><a:picLocks noChangeAspect="1"/></xdr:cNvPicPr></xdr:nvPicPr><xdr:blipFill><a:blip r:embed="rId1"/><a:stretch><a:fillRect/></a:stretch></xdr:blipFill><xdr:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="'+cx+'" cy="'+cy+'"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr></xdr:pic><xdr:clientData/></xdr:oneCellAnchor></xdr:wsDr>';
+var files=[{n:"[Content_Types].xml",d:XH+'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/></Types>'},
+{n:"_rels/.rels",d:XH+'<Relationships xmlns="'+PR+'"><Relationship Id="rId1" Type="'+RL+'/officeDocument" Target="xl/workbook.xml"/></Relationships>'},
+{n:"xl/workbook.xml",d:XH+'<workbook '+NS+'><sheets><sheet name="Orçamento" sheetId="1" r:id="rId1"/></sheets><calcPr calcId="191029" fullCalcOnLoad="1"/></workbook>'},
+{n:"xl/_rels/workbook.xml.rels",d:XH+'<Relationships xmlns="'+PR+'"><Relationship Id="rId1" Type="'+RL+'/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="'+RL+'/styles" Target="styles.xml"/></Relationships>'},
+{n:"xl/styles.xml",d:styles},{n:"xl/worksheets/sheet1.xml",d:sheet},
+{n:"xl/worksheets/_rels/sheet1.xml.rels",d:XH+'<Relationships xmlns="'+PR+'"><Relationship Id="rId1" Type="'+RL+'/drawing" Target="../drawings/drawing1.xml"/></Relationships>'},
+{n:"xl/drawings/drawing1.xml",d:draw},{n:"xl/drawings/_rels/drawing1.xml.rels",d:XH+'<Relationships xmlns="'+PR+'"><Relationship Id="rId1" Type="'+RL+'/image" Target="../media/image1.png"/></Relationships>'},
+{n:"xl/media/image1.png",d:png}];
+var b=zip(files),nm=nomeArq("xlsx");if(window.navigator&&navigator.msSaveOrOpenBlob){navigator.msSaveOrOpenBlob(b,nm);return;}var u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download=nm;a.style.display="none";document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(u);a.remove();},5000);setTimeout(function(){alert("✅ Arquivo Excel gerado: "+nm+"\nProcure na pasta Downloads (ou na barra de downloads do navegador). Abra no Excel para editar a cor e outras informações.");},300);}
+$("xls").onclick=function(){try{gerarXls();}catch(e){alert("Não consegui gerar o Excel. Mande esta mensagem para o suporte: "+(e&&e.message?e.message:e));}};
+lista();calc();
+
+/* Integração segura com a área autenticada da Koleni.
+   O simulador continua com todas as regras de precificação originais. */
+(function(){
+  var embedded = window.parent !== window;
+  if(!embedded) return;
+  var block=document.createElement('div');
+  block.innerHTML='<button type="button" id="koleni-integrar">Enviar preços simulados ao pedido Koleni</button>'+
+  '<p id="koleni-aviso">Os valores serão conferidos com as quantidades de cada peça antes de entrar no pedido. Os preços são sugestões sujeitas a confirmação.</p>';
+  $('itens').appendChild(block);
+  var btn=$('koleni-integrar');
+  btn.addEventListener('click',function(){
+    if(!IT.length){alert('Adicione os produtos e respectivas aplicações ao orçamento antes de enviar.');return;}
+    window.parent.postMessage({type:'koleni:simulator:quote',version:1,
+      items:IT.map(function(it){return {name:it.n,application:it.ap,quantity:it.q,unitPrice:it.p,productIndex:it.f&&it.f.prod,options:it.f||{}};}),
+      total:total(),installments:D.parc,cashDiscount:D.avista,deliveryDays:PRAZO,
+      customerName:$('cli').value.trim(),customerContact:$('con').value.trim(),
+      seller:$('ven').value.trim(),generatedAt:new Date().toISOString()
+    },window.location.origin);
+  });
+  window.addEventListener('message',function(event){
+    if(event.source!==window.parent||event.origin!==window.location.origin)return;
+    var data=event.data;
+    if(!data)return;
+    if(data.type==='koleni:simulator:pricing'){
+      var pricing=data.pricing;
+      if(!pricing||!Array.isArray(pricing.produtos)||!Array.isArray(pricing.p)||
+         pricing.produtos.length!==pricing.p.length||!pricing.produtos.length)return;
+      D.qs=pricing.qs;
+      D.avista=pricing.avista;
+      D.t3=pricing.t3;
+      D.parc=pricing.parc;
+      D.gerado=pricing.gerado||D.gerado;
+      D.produtos=pricing.produtos;
+      D.p=pricing.p.map(function(o){var converted={};Object.keys(o).forEach(function(k){converted[k]=o[k].map(function(cents){return Number(cents)/100;});});return converted;});
+      $('prod').length=1;
+      D.produtos.forEach(function(p,i){$('prod').add(new Option(p,i));});
+      $('ger').textContent=D.gerado;
+      $('lparc').textContent='Preço sugerido – em até '+D.parc+'x (parcelamento a combinar com o cliente)';
+      $('lav1').textContent='À vista ('+pc(D.avista)+' de desconto) – preço por peça';
+      $('lav2').textContent='À vista ('+pc(D.avista)+' de desconto) – total';
+      $('lgp').textContent='Em até '+D.parc+'x';
+      $('lga').textContent='À vista ('+pc(D.avista)+' de desconto) – total';
+      $('bt2').textContent='Tabela 2 • À vista ('+pc(D.avista)+')';
+      calc();return;
+    }
+    if(data.type!=='koleni:simulator:prefill')return;
+    if(data.seller&&!$('ven').value)$('ven').value=String(data.seller).slice(0,160);
+    if(data.customerName&&!$('cli').value)$('cli').value=String(data.customerName).slice(0,160);
+    if(data.customerContact&&!$('con').value)$('con').value=String(data.customerContact).slice(0,160);
+    if(data.quantity&&IT.length===0&&!$('qtd').value)$('qtd').value=String(data.quantity);
+    /* Só seleciona produto se o nome for EXATAMENTE igual: evita orçamentos incorretos. */
+    if(data.garmentName&&IT.length===0){
+      var normalized=function(s){return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toUpperCase();};
+      var exact=D.produtos.findIndex(function(x){return normalized(x)===normalized(data.garmentName);});
+      if(exact>=0)$('prod').value=String(exact);
+    }
+    calc();
+  });
+  window.parent.postMessage({type:'koleni:simulator:ready',version:1,products:D.produtos.length},window.location.origin);
+})();
+
+</script></body></html>

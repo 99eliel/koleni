@@ -171,6 +171,13 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    // Tabela de preços privada: equipe autenticada pode consultar, apenas administrador edita.
+    match /pricingTables/{tableId} {
+      allow get: if isActiveStaff();
+      allow list: if isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
     match /orders/{orderId} {
       allow create: if canSell()
         && request.resource.data.sellerUid == request.auth.uid
