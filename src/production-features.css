@@ -31,15 +31,15 @@
 .size-grid-inputs{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
 .size-grid-inputs label{gap:4px!important;text-align:center;font-size:.63rem!important}
 .size-grid-inputs input{padding:8px 5px!important;text-align:center}
-.order-operations-panel{display:flex;flex-direction:column;gap:10px;padding:13px;border:1px solid #e7e7e7;border-radius:13px;background:linear-gradient(180deg,#f8fbfd,#eef5f9)}
+.order-operations-panel{display:flex;flex-direction:column;gap:12px;min-width:0;width:100%;box-sizing:border-box;padding:13px;border:1px solid #e7e7e7;border-radius:13px;background:linear-gradient(180deg,#f8fbfd,#eef5f9)}
 .order-operations-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .order-operations-head>div{display:flex;flex-direction:column;gap:2px}
 .order-operations-kicker{color:#e33336;font-size:.58rem;font-weight:900;text-transform:uppercase;letter-spacing:.1em}
 .order-operations-head strong{font-size:.82rem;color:#262626}
 .order-version-pill{padding:5px 8px;border-radius:999px;background:#f7f7f7;color:#e33336;font-size:.62rem;font-weight:900}
-.order-status-control{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end}
-.order-status-control label{display:flex;flex-direction:column;gap:5px;color:#626262;font-size:.7rem;font-weight:800}
-.order-status-control select{width:100%;padding:9px 10px;border:1px solid #e7e7e7;border-radius:9px;background:#fff;color:#262626;font:inherit}
+.order-status-control{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;align-items:stretch;width:100%;min-width:0}
+.order-status-control label{display:flex;flex-direction:column;gap:6px;min-width:0;color:#626262;font-size:.74rem;font-weight:800}
+.order-status-control select{display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;padding:10px 12px;border:1px solid #d9d9d9;border-radius:9px;background:#fff;color:#262626;font:inherit}
 .production-checklist-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:2px}
 .production-checklist-head span{color:#626262;font-size:.65rem;font-weight:800}
 .production-checklist-head strong{color:#e33336;font-size:.68rem}
