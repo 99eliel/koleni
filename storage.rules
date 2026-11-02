@@ -74,6 +74,13 @@ service firebase.storage {
       allow delete: if isAdmin();
     }
 
+    // Fotos técnicas da tabela de preços: escrita exclusiva do administrador.
+    match /pricing-products/{productId}/{fileName} {
+      allow read: if isActiveStaff();
+      allow create, update: if isAdmin() && isImage(5 * 1024 * 1024);
+      allow delete: if isAdmin();
+    }
+
     match /logo-assets/{hash}/{fileName} {
       allow read: if isActiveStaff();
       allow create, update: if canSell() && isLogoAsset();

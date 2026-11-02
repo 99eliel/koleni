@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../lib/firebase';
+import { loadPricingCatalog, toCalculatorPricing } from '../lib/pricingCatalog';
 import MartinpelBrand from '../components/MartinpelBrand';
 import { readPieceCart } from '../lib/multiPieceCart';
 import { readSimulatorQuoteDraft, saveSimulatorQuoteDraft } from '../lib/simulatorQuoteDraft';
@@ -36,7 +35,8 @@ export default function QuoteSimulatorPage({ user, profile, isAdmin = false, log
   const [pricing, setPricing] = useState(null);
   const [pricingBusy, setPricingBusy] = useState(true);
   const [pricingError, setPricingError] = useState('');
-  const [uploading, setUploading] = useState(false);
+  const [catalogSummary, setCatalogSummary] = useState(null);
+  const [frameHeight, setFrameHeight] = useState(1550);
   const [frameReady, setFrameReady] = useState(false);
   const [mapping, setMapping] = useState({});
   const [message, setMessage] = useState('');
@@ -45,13 +45,16 @@ export default function QuoteSimulatorPage({ user, profile, isAdmin = false, log
 
   useEffect(() => {
     let live = true;
-    getDoc(doc(db, 'pricingTables', 'current'))
-      .then((snapshot) => {
+    loadPricingCatalog()
+      .then(({config, products, configured}) => {
         if (!live) return;
-        if (snapshot.exists()) setPricing(snapshot.data());
-        else setPricingError('A tabela de preços ainda não foi importada pelo administrador.');
+        const table = toCalculatorPricing(config, products);
+        setCatalogSummary({ count: products.length, active: table.produtos.length });
+        if (!configured) setPricingError('O administrador ainda não importou ou cadastrou a tabela de preços.');
+        else if (!table.produtos.length) setPricingError('Nenhuma peça ativa disponível. Solicite ao administrador que revise os modelos.');
+        setPricing(table);
       })
-      .catch((err) => { if (live) setPricingError(`Não foi possível consultar a tabela privada: ${err.message}. Confira as regras do Firestore.`); })
+      .catch((err) => { if (live) setPricingError(`Não foi possível consultar o catálogo privado: ${err.message}. Verifique as regras do Firestore.`); })
       .finally(() => { if (live) setPricingBusy(false); });
     return () => { live = false; };
   }, []);
@@ -67,49 +70,16 @@ export default function QuoteSimulatorPage({ user, profile, isAdmin = false, log
     }, window.location.origin);
   }, [pricing, frameReady, profile?.name, user?.displayName, user?.email, cart]);
 
-  async function importPrivateTable(event) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    setPricingError('');
-    try {
-      if (file.size > 800_000) throw new Error('Arquivo acima do limite de 800 KB.');
-      const parsed = JSON.parse(await file.text());
-      if (!Array.isArray(parsed.produtos) || !Array.isArray(parsed.p) ||
-          parsed.produtos.length < 1 || parsed.produtos.length !== parsed.p.length ||
-          !Array.isArray(parsed.qs) || parsed.qs.length < 1 ||
-          parsed.p.some((entry) => !entry || !Array.isArray(entry.N) || entry.N.length !== parsed.qs.length)) {
-        throw new Error('Arquivo inválido. Selecione a tabela Koleni exportada em JSON.');
-      }
-      const privateTable = {
-        version: Number(parsed.version) || 1,
-        qs: parsed.qs,
-        avista: Number(parsed.avista) || 0.05,
-        t3: Number(parsed.t3) || 0.1,
-        parc: Number(parsed.parc) || 3,
-        gerado: String(parsed.gerado || ''),
-        produtos: parsed.produtos,
-        p: parsed.p,
-      };
-      await setDoc(doc(db, 'pricingTables', 'current'), {
-        ...privateTable,
-        updatedBy: user.uid,
-        updatedAt: serverTimestamp(),
-      });
-      setPricing(privateTable);
-    } catch (err) {
-      setPricingError(`Não foi possível importar a tabela: ${err.message}`);
-    } finally {
-      setUploading(false);
-      event.target.value = '';
-    }
-  }
-
   useEffect(() => {
     function onFrameMessage(event) {
       if (event.origin !== window.location.origin || event.source !== frameRef.current?.contentWindow) return;
       const payload = event.data;
       if (!payload || payload.version !== 1) return;
+      if (payload.type === 'koleni:simulator:height') {
+        const height = Number(payload.height);
+        if (Number.isFinite(height) && height >= 550 && height <= 12000) setFrameHeight(height);
+        return;
+      }
       if (payload.type === 'koleni:simulator:ready') {
         setFrameReady(true);
       }
@@ -184,27 +154,25 @@ export default function QuoteSimulatorPage({ user, profile, isAdmin = false, log
       <MartinpelBrand compact subtitle="Simulação de orçamento" />
       <div className="simulator-top-actions">
         <Link className="button button-secondary" to="/vendedor">Voltar ao catálogo / pedido</Link>
+        {isAdmin && <Link className="button button-primary" to="/admin/simulador">Gerenciar preços e modelos</Link>}
         <button className="button admin-logout-button" type="button" onClick={logout}>Sair</button>
       </div>
     </header>
     <section className="simulator-intro panel">
       <div><span className="catalog-kicker">Precificação por quantidade</span>
         <h1>Simulador de orçamento Koleni</h1>
-        <p>A tabela original de preços está integrada aqui. Escolha o produto, quantidade e técnica de aplicação para calcular o preço por peça. Também é possível gerar imagem, Excel e texto para WhatsApp.</p>
+        <p>Escolha o modelo, informe a quantidade e selecione silk, DTF, bordado ou peça lisa. Confira a precificação em tempo real e monte seu orçamento com diferentes produtos.</p>
       </div>
       <div className="simulator-count"><strong>{cart.length}</strong><span>personalizações no carrinho</span></div>
     </section>
     <section className="simulator-private panel">
       <div>
-        <strong>Tabela de preços privada</strong>
-        <p>{pricing ? `${pricing.produtos.length} produtos carregados do Firebase, visíveis apenas para a equipe autenticada.` : pricingBusy ? 'Consultando tabela de preços…' : pricingError || 'Tabela não disponível.'}</p>
+        <strong>Catálogo de preços conectado</strong>
+        <p>{pricingBusy ? 'Carregando valores privados do Firebase…' : catalogSummary ? `${catalogSummary.active} modelos ativos de ${catalogSummary.count} cadastrados. Tabela de preços acessível apenas à equipe autenticada.` : 'Tabela indisponível.'}</p>
       </div>
-      {isAdmin && <label className="simulator-import-label">
-        {uploading ? 'Importando tabela…' : pricing ? 'Atualizar tabela (JSON)' : 'Importar tabela Koleni (JSON)'}
-        <input type="file" accept=".json,application/json" disabled={uploading} onChange={importPrivateTable} />
-      </label>}
+      {isAdmin && <Link className="button button-secondary" to="/admin/simulador">Administrar catálogo e preços</Link>}
       {pricingError && <p className="simulator-import-error">{pricingError}</p>}
-      {!pricing && !isAdmin && <small>Solicite ao administrador que publique as regras do Firestore e importe a tabela de preços.</small>}
+      {!pricing && !isAdmin && <small>Peça ao administrador para cadastrar os modelos e publicar as regras do Firebase.</small>}
     </section>
     {cart.length > 0 && <section className="simulator-cart panel">
       <h2>Peças que você já personalizou</h2>
@@ -225,6 +193,7 @@ export default function QuoteSimulatorPage({ user, profile, isAdmin = false, log
         title="Calculadora original de preços Koleni"
         allow="clipboard-write"
         loading="eager"
+        style={{ height: `${frameHeight}px` }}
       />
     </section>
     {received && <section id="simulador-conferencia" className="simulator-review panel">

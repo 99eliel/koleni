@@ -33,3 +33,12 @@
 .simulator-import-label{background:#222;color:white;border-radius:8px;padding:12px;cursor:pointer;font-size:13px;font-weight:700}
 .simulator-import-label input{display:block;max-width:220px;margin-top:8px;font-size:12px;color:white}
 .simulator-import-error{flex-basis:100%;color:#ad252a!important}.simulator-private small{display:block;color:#666}
+/* Painel comercial do simulador reformulado */
+.simulator-shell{max-width:1560px;gap:16px;padding:22px}
+.simulator-intro{background:#19191b!important;color:#fff!important;border-radius:17px!important;border:0!important;padding:28px 33px!important}
+.simulator-intro h1{color:white}.simulator-intro p{color:#d0d0d0!important}.simulator-count{border-left-color:#ea464b}.simulator-count strong{color:#fff}.simulator-count span{color:#d0d0d0}
+.simulator-private{background:#fff!important;border:1px solid #e5e5e5;border-radius:12px}
+.simulator-frame-panel{background:#f7f8fa;border:1px solid #e6e6e6;border-radius:17px;box-shadow:0 5px 22px #00000008}
+.simulator-frame-panel iframe{height:1550px;min-height:850px;transition:height .15s;max-width:100%}
+.simulator-info,.simulator-cart,.simulator-review{border-radius:13px}
+@media(max-width:750px){.simulator-shell{padding:9px}.simulator-intro{padding:20px!important}.simulator-frame-panel iframe{min-height:900px}}

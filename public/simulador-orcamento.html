@@ -37,6 +37,41 @@ input:focus,select:focus{outline:2px solid #e33336}
 #koleni-integrar:disabled{opacity:.55;cursor:not-allowed}
 #koleni-aviso{font-size:13px;color:#555;margin-top:0;line-height:1.6}
 </style>
+
+<style id="koleni-simulador-organizado">
+:root{--pt:#242424;--cz:#f8f8f8;--cm:#f0f0f0;--ce:#686868;--am:#fff5dc}
+*{box-sizing:border-box}
+body{background:#f7f8fa;color:#252525}
+header{background:#fff;border-bottom:1px solid #e7e7e7;padding:22px 28px;gap:20px}
+header .lg{width:190px;height:62px;display:flex;align-items:center;justify-content:center}
+header .lg img{width:190px;height:64px;margin:0;object-fit:contain}
+header h1{font-size:22px;letter-spacing:-.025em}
+header p{max-width:780px;color:#7a7a7a;line-height:1.55}
+main{max-width:1370px;grid-template-columns:minmax(0,7fr) minmax(315px,5fr);align-items:start;gap:18px;padding:20px}
+.card{border-radius:14px;padding:22px;border:1px solid #eaeaea;box-shadow:0 3px 14px rgba(0,0,0,.035);min-width:0}
+.card h2{border-color:#e33336;font-size:14px;letter-spacing:.02em;padding-bottom:12px;margin-bottom:14px}
+.card h2:nth-of-type(2){margin-top:25px!important}
+.card label{font-weight:700;font-size:12px;color:#4b4b4b;margin-top:14px;margin-bottom:6px}
+.card input,.card select{background:#fff;border:1px solid #d5d5d5;border-radius:9px;padding:11px 12px;font-size:14px;min-height:44px;transition:border-color .15s}
+.card input:focus,.card select:focus{outline:2px solid #e6b0b2;border-color:#d62d35}
+.card .req.vz{background:#fff9ea;border-color:#e5bf65}
+.card .big{color:#c32930;font-size:clamp(30px,4vw,45px);margin:10px 0}
+.kv{padding:12px 0;align-items:center;line-height:1.45}
+.kv b{color:#292929}.card .tip{background:#f7f8fa;border-color:#d32b32;color:#686868;border-radius:8px;padding:12px;line-height:1.6}
+.btn{background:#d32b32;border-radius:10px;min-height:46px}.btn:hover{background:#b81f26}.btn2{background:#fff;color:#242424;border:1px solid #d8d8d8}.btn2:hover{background:#f1f1f1}
+#itens{scroll-margin-top:15px}#itens .gt{background:#fff4f4;border-radius:9px;padding:14px 12px;margin-top:12px}#itens .gt b{color:#bd2129;font-size:20px}
+table{font-size:12px}th{background:#272727;padding:12px 9px}td{padding:11px 9px}
+#itens{overflow-x:auto}.tabs button{border-radius:8px;border:1px solid #ddd;color:#343434}.tabs button.on{background:#272727;border-color:#272727;color:#fff}
+#koleni-integrar{width:100%;min-height:48px;background:#242424!important;border-radius:10px;margin:18px 0 9px}
+#koleni-integrar:hover{background:#bd282e!important}
+.koleni-product-details{border:1px solid #e4e4e4;background:#fafafa;border-radius:12px;padding:14px;margin-top:13px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:12px}
+.koleni-product-details[hidden]{display:none}.koleni-detail-title{grid-column:1/-1;font-size:11px;letter-spacing:.06em;color:#c02b32;text-transform:uppercase;font-weight:800}
+.koleni-detail-grid{display:grid;gap:7px;min-width:0}.koleni-detail-entry{font-size:12px;line-height:1.45;overflow-wrap:anywhere}.koleni-detail-entry strong{color:#333;margin-right:5px}.koleni-detail-entry span{color:#666}
+.koleni-detail-photo{max-width:125px;max-height:132px;object-fit:contain;background:white;border-radius:8px;border:1px solid #eee;padding:5px}
+footer{color:#888;padding:14px}
+@media(max-width:880px){main{grid-template-columns:1fr;padding:12px;gap:12px}.card{padding:17px}.card .big{font-size:34px}header{padding:14px 16px}header .lg{width:150px;height:48px}header .lg img{width:150px;height:48px}.koleni-detail-photo{max-width:100px}}
+@media(max-width:520px){header h1{font-size:19px}.row{grid-template-columns:1fr}#itens table{min-width:690px}.card{padding:14px}}
+</style>
 </head><body>
 <header><div class="lg"><img id="logo" alt="Koleni Uniformes"></div><div><h1>Simulador de Orçamento • Área do Vendedor</h1><p>Preencha os campos em AMARELO (obrigatórios) → o preço aparece na hora. Adicione quantos produtos quiser ao orçamento.</p></div></header>
 <main>
@@ -44,6 +79,7 @@ input:focus,select:focus{outline:2px solid #e33336}
 <label>Cliente / nº do orçamento</label><input id="cli" class="req" placeholder="Ex.: Empresa X – Orçamento 123">
 <label>Contato de quem solicitou (nome / telefone)</label><input id="con" class="req" placeholder="Ex.: Maria – (11) 99999-9999"><label>Nome do vendedor</label><input id="ven" class="req" placeholder="Ex.: João">
 <label>Produto</label><select id="prod" class="req"><option value="">Selecione o produto…</option></select>
+<div id="koleni-product-details" class="koleni-product-details" hidden></div>
 <label>Quantidade (peças)</label><input id="qtd" class="req" type="number" min="1" inputmode="numeric" placeholder="Ex.: 50">
 <h2 style="margin-top:16px">② Estampa / bordado</h2>
 <div class="row"><div><label>Tipo de aplicação</label><select id="tipo" class="req"><option value="">Selecione…</option><option>Nenhuma</option><option>Silk</option><option>DTF</option><option>Bordado</option></select></div>
@@ -330,8 +366,20 @@ lista();calc();
       D.gerado=pricing.gerado||D.gerado;
       D.produtos=pricing.produtos;
       D.p=pricing.p.map(function(o){var converted={};Object.keys(o).forEach(function(k){converted[k]=o[k].map(function(cents){return Number(cents)/100;});});return converted;});
+      D.productMeta=Array.isArray(pricing.productMeta)?pricing.productMeta:[];
+      if(Number.isInteger(Number(pricing.deliveryDays))&&Number(pricing.deliveryDays)>0)PRAZO=Number(pricing.deliveryDays);
+      if(Number.isInteger(Number(pricing.validDays))&&Number(pricing.validDays)>0)VALID=Number(pricing.validDays);
+      tPz=PRAZO+' dias';ATE=new Date(HOJE.getTime()+VALID*864e5);tVl=VALID+' dias (válido até '+dbr(ATE)+')';
+      $('pz').textContent=tPz;$('vl').textContent=tVl;
+      var tip=document.querySelector('main .card.full:last-of-type .tip');
+      if(tip&&pricing.artSizeCm)tip.textContent=tip.textContent.replace('10 × 10 cm',String(pricing.artSizeCm).slice(0,80));
       $('prod').length=1;
-      D.produtos.forEach(function(p,i){$('prod').add(new Option(p,i));});
+      var groups={};
+      D.produtos.forEach(function(p,i){var meta=D.productMeta[i]||{};var category=String(meta.category||'Outros modelos').trim();
+        if(!groups[category]){groups[category]=document.createElement('optgroup');groups[category].label=category;$('prod').appendChild(groups[category]);}
+        groups[category].appendChild(new Option(p,i));
+      });
+      refreshProductDetails();
       $('ger').textContent=D.gerado;
       $('lparc').textContent='Preço sugerido – em até '+D.parc+'x (parcelamento a combinar com o cliente)';
       $('lav1').textContent='À vista ('+pc(D.avista)+' de desconto) – preço por peça';
@@ -354,7 +402,30 @@ lista();calc();
     }
     calc();
   });
+  function refreshProductDetails(){
+    var idx=parseInt($('prod').value,10), meta=D.productMeta&&D.productMeta[idx], root=$('koleni-product-details');
+    root.replaceChildren();root.hidden=!meta || $('prod').value==='';
+    if(root.hidden)return;
+    var title=document.createElement('div');title.className='koleni-detail-title';title.textContent='Detalhes deste modelo';root.appendChild(title);
+    var grid=document.createElement('div');grid.className='koleni-detail-grid';root.appendChild(grid);
+    [['Referência',meta.modelCode],['Categoria',meta.category],['Tecido',meta.fabric],['Composição',meta.composition],['Tamanhos',meta.sizes],['Descrição',meta.description],['Observações',meta.notes]].concat((meta.extraFields||[]).map(function(o){return [o.label,o.value]})).forEach(function(field){
+      if(!field[1])return;
+      var el=document.createElement('div');el.className='koleni-detail-entry';
+      var strong=document.createElement('strong');strong.textContent=String(field[0])+':';el.appendChild(strong);
+      var value=document.createElement('span');value.textContent=String(field[1]);el.appendChild(value);grid.appendChild(el);
+    });
+    if(meta.imageUrl&&String(meta.imageUrl).startsWith('https://')){
+      var photo=document.createElement('img');photo.className='koleni-detail-photo';photo.alt='Foto de referência do modelo';photo.loading='lazy';photo.src=meta.imageUrl;root.appendChild(photo);
+    }
+  }
+  $('prod').addEventListener('change',refreshProductDetails);
+  function sendHeight(){var height=Math.ceil(document.documentElement.scrollHeight)+8;
+    if(height>400)window.parent.postMessage({type:'koleni:simulator:height',version:1,height:height},window.location.origin);
+  }
+  if(typeof ResizeObserver!=='undefined')new ResizeObserver(sendHeight).observe(document.body);
+  window.addEventListener('load',sendHeight);
   window.parent.postMessage({type:'koleni:simulator:ready',version:1,products:D.produtos.length},window.location.origin);
+  setTimeout(sendHeight,60);
 })();
 
 </script></body></html>

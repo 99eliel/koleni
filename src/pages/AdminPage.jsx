@@ -486,6 +486,7 @@ function AdminWorkspace({ logout }) {
           <button type="button" className={section === 'catalog' ? 'active' : ''} onClick={openCatalog}><span className="admin-nav-icon">▦</span><span><strong>Catálogo</strong><small>{activeGarmentCount} peça(s) ativa(s)</small></span><b>{activeGarmentCount}</b></button>
           <button type="button" className={section === 'editor' && !garmentId ? 'active' : ''} onClick={addNewGarment}><span className="admin-nav-icon">＋</span><span><strong>Nova peça</strong><small>Adicionar ao catálogo</small></span></button>
           <button type="button" className={section === 'orders' ? 'active' : ''} onClick={openOrders}><span className="admin-nav-icon">◎</span><span><strong>Pedidos & Orçamentos</strong><small>Atendimento comercial</small></span>{orders.length > 0 && <b>{orders.length}</b>}</button>
+          <Link className="admin-sidebar-public admin-pricing-nav" to="/admin/simulador"><span className="admin-nav-icon">＄</span><span><strong>Preços e simulador</strong><small>Controle de peças e valores</small></span></Link>
         </nav>
 
         {section === 'editor' && garmentId && <div className="admin-sidebar-context"><span>Editando agora</span><strong>{name || 'Peça sem nome'}</strong><button type="button" onClick={openCatalog}>← Voltar ao catálogo</button></div>}

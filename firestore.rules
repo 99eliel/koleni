@@ -178,6 +178,12 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    // Modelos de precificação separados, com matrizes e metadados privados.
+    match /pricingProducts/{productId} {
+      allow read: if isActiveStaff();
+      allow create, update, delete: if isAdmin();
+    }
+
     match /orders/{orderId} {
       allow create: if canSell()
         && request.resource.data.sellerUid == request.auth.uid

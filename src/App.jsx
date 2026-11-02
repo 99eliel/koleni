@@ -11,6 +11,7 @@ import CustomizerPage from './pages/CustomizerPage';
 import OrderRevisionPage from './pages/OrderRevisionPage';
 import ProductionPipelinePage from './pages/ProductionPipelinePage';
 import QuoteSimulatorPage from './pages/QuoteSimulatorPage';
+import PricingAdminPage from './pages/PricingAdminPage';
 import PublicLandingPage from './pages/PublicLandingPage';
 import SellerOrdersPage from './pages/SellerOrdersPage';
 import TechnicalSheetPage from './pages/TechnicalSheetPage';
@@ -123,6 +124,7 @@ export default function App() {
         <Route path="/customizar/:garmentId" element={<SellerRoute />} />
         <Route path="/meus-pedidos" element={<SellerOrdersRoute />} />
         <Route path="/simulador" element={<SimulatorRoute />} />
+        <Route path="/admin/simulador" element={<PricingAdminPage />} />
         <Route path="/revisar/:orderId" element={<RevisionRoute />} />
         <Route path="/ficha-tecnica/:orderId" element={<TechnicalSheetRoute />} />
         <Route path="/admin" element={<AdminRoute />} />
