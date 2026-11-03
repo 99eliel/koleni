@@ -254,6 +254,11 @@ export default function BackgroundRemovalDialog({
     setRemoveBgError('');
     setRemoveBgCredits('');
     setRemoveBgCached(false);
+    setRemoveBgBlob(null);
+    setRemoveBgPreviewUrl((current) => {
+      if (current) URL.revokeObjectURL(current);
+      return '';
+    });
     try {
       const result = await removeBackgroundWithRemoveBg(source, { cacheKey });
       const nextUrl = URL.createObjectURL(result.blob);
@@ -269,6 +274,17 @@ export default function BackgroundRemovalDialog({
     } finally {
       setRemoveBgProcessing(false);
     }
+  }
+
+  function handleRemoveBgPreviewError() {
+    setRemoveBgBlob(null);
+    setRemoveBgCached(false);
+    setRemoveBgCredits('');
+    setRemoveBgError('O resultado recebido não pôde ser exibido como imagem. Ele não será aplicado à peça. Tente novamente; se persistir, verifique a rota /api/remove-background no Firebase Hosting.');
+    setRemoveBgPreviewUrl((current) => {
+      if (current) URL.revokeObjectURL(current);
+      return '';
+    });
   }
 
   async function applyRemoveBg() {
@@ -487,7 +503,7 @@ export default function BackgroundRemovalDialog({
           <div className="removebg-official-actions">
             {removeBgPreviewUrl && (
               <div className="removebg-result checkerboard checkerboard-contrast">
-                <img src={removeBgPreviewUrl} alt="Resultado do remove.bg" />
+                <img src={removeBgPreviewUrl} alt="Resultado do remove.bg" onError={handleRemoveBgPreviewError} />
               </div>
             )}
             <button type="button" className="button button-primary" onClick={runRemoveBg} disabled={removeBgProcessing}>

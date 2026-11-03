@@ -63,3 +63,9 @@ Nunca use `VITE_REMOVE_BG_API_KEY`, pois todas as variáveis `VITE_*` são públ
 5. Depois de alterar o front-end no GitHub, faça `npm run build` e `firebase deploy --project personalizakoleni --only hosting`, sempre com o `firebase.json` principal. Faça Ctrl+F5 no navegador.
 
 **Não compartilhe a API Key, tokens de autenticação ou outros segredos em capturas de tela ou logs.**
+
+## Cache inválido e prévia quebrada
+
+Versões antigas do frontend podiam aceitar HTTP 200 com HTML (fallback do Firebase Hosting) e guardar esse conteúdo como se fosse uma imagem. O frontend atual usa o cache `koleni-removebg-v2`, verifica assinatura PNG **e** decodificação da imagem, descarta registros inválidos e recusa salvar resultados impróprios. A prévia também bloqueia a aplicação se o navegador não conseguir exibir a imagem.
+
+Se visualizar "Reutilizado do cache" e uma imagem quebrada na versão anterior, atualize o repositório, recompile e publique com `firebase.json` principal. Se a API falhar novamente, agora aparecerá um erro de rota, autorização ou resposta inválida. Não volte a publicar o `firebase.hosting-only.json`, pois ele redireciona a rota da API para o SPA.

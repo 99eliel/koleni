@@ -1,7 +1,7 @@
 import { auth } from './firebase';
 
 const ENDPOINT = '/api/remove-background';
-const CACHE_NAME = 'koleni-removebg-v1';
+const CACHE_NAME = 'koleni-removebg-v2';
 
 async function readError(response) {
   // O corpo de uma Response só pode ser lido uma vez. Em falhas HTML da
@@ -46,6 +46,39 @@ async function cacheRequestFor(key) {
   return new Request(`${location.origin}/__removebg-cache__/${hash}`);
 }
 
+// Validar os bytes e a decodificação: o fallback do Hosting pode responder
+// HTTP 200 com index.html, que versões antigas salvaram incorretamente
+// como PNG no Cache Storage.
+async function isValidPng(blob) {
+  if (!blob || blob.size < 33) return false;
+  try {
+    const header = new Uint8Array(await blob.slice(0, 24).arrayBuffer());
+    const pngSignature = [137, 80, 78, 71, 13, 10, 26, 10];
+    if (!pngSignature.every((byte, index) => header[index] === byte)) return false;
+    if (String.fromCharCode(...header.slice(12, 16)) !== 'IHDR') return false;
+    if (typeof createImageBitmap === 'function') {
+      const bitmap = await createImageBitmap(blob);
+      const valid = bitmap.width > 0 && bitmap.height > 0;
+      bitmap.close?.();
+      return valid;
+    }
+    // Fallback para navegadores sem createImageBitmap.
+    const url = URL.createObjectURL(blob);
+    try {
+      return await new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(img.naturalWidth > 0 && img.naturalHeight > 0);
+        img.onerror = () => resolve(false);
+        img.src = url;
+      });
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  } catch {
+    return false;
+  }
+}
+
 async function readCachedResult(key) {
   if (!('caches' in window) || !key) return null;
   try {
@@ -54,7 +87,10 @@ async function readCachedResult(key) {
     const response = await cache.match(request);
     if (!response) return null;
     const blob = await response.blob();
-    if (!blob?.size) return null;
+    if (!await isValidPng(blob)) {
+      await cache.delete(request);
+      return null;
+    }
     return {
       blob,
       creditsCharged: '0',
@@ -134,6 +170,9 @@ export async function removeBackgroundWithRemoveBg(source, options = {}) {
 
   const blob = await response.blob();
   if (!blob?.size) throw new Error('O remove.bg retornou uma imagem vazia.');
+  if (!await isValidPng(blob)) {
+    throw new Error('O servidor retornou dados inválidos no lugar de uma imagem PNG. Verifique a rota /api/remove-background e o Hosting do Firebase.');
+  }
 
   const result = {
     blob,
