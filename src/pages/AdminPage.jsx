@@ -17,6 +17,7 @@ import { DEFAULT_SIZE_SCALE_TYPE, getSizeScaleLabel, normalizeSizeScale, parseCu
 import { uploadGarmentImage } from '../lib/storageImages';
 import '../admin.css';
 import '../orders-actions.css';
+import '../admin-orders-compact.css';
 
 const EMPTY_IMAGES = { front: '', back: '', combined: '' };
 const VIEW_LABELS = { front: 'Foto 1', back: 'Foto 2', combined: 'Foto 3' };
@@ -47,6 +48,7 @@ function whatsappHref(value) {
 function OrdersView({ orders, loading, error, onRefresh }) {
   const [actionId, setActionId] = useState('');
   const [actionError, setActionError] = useState('');
+  const [expandedOrderId, setExpandedOrderId] = useState(null);
   const completedCount = orders.filter((order) => order.status === 'completed').length;
   const pendingCount = orders.length - completedCount;
 
@@ -103,6 +105,18 @@ function OrdersView({ orders, loading, error, onRefresh }) {
           let finalImages = Object.entries(order.finalImages ?? {}).filter(([, url]) => Boolean(url));
           if (finalImages.length === 0 && order.finalImageUrl) finalImages = [['final', order.finalImageUrl]];
           const whatsappLink = whatsappHref(order.whatsapp);
+          const firstItem = Array.isArray(order.items) ? order.items[0] : null;
+          const previewImage = finalImages[0]?.[1]
+            || firstItem?.finalImageUrl
+            || Object.values(firstItem?.finalImages || {}).find(Boolean)
+            || '';
+          const itemQuantity = Array.isArray(order.items) && order.items.length > 0
+            ? order.items.reduce((total, item) => total + (Number(item.quantity) || 0), 0)
+            : order.quantity;
+          const itemLabel = order.items?.length > 1
+            ? `${order.items.length} modelos no pedido`
+            : order.garmentName || firstItem?.garmentName || order.garmentId || 'Peça não identificada';
+          const expanded = expandedOrderId === order.id;
           const vectorFiles = Array.from(
             new Map(
               (order.logos ?? [])
@@ -114,7 +128,7 @@ function OrdersView({ orders, loading, error, onRefresh }) {
           const isWorking = actionId === order.id;
 
           return (
-            <article className={`panel order-card ${completed ? 'order-card-completed' : ''}`} key={order.id}>
+            <article className={`panel order-card ${completed ? 'order-card-completed' : ''} ${expanded ? 'is-expanded' : ''}`} key={order.id}>
               <div className="order-card-head">
                 <div><span>Pedido</span><code>{order.displayCode || order.id}</code></div>
                 <div className="order-head-right">
@@ -123,6 +137,28 @@ function OrdersView({ orders, loading, error, onRefresh }) {
                 </div>
               </div>
 
+              <div className="order-card-overview">
+                <div className="order-overview-thumb">
+                  {previewImage
+                    ? <img src={previewImage} alt={`Prévia do pedido ${order.displayCode || order.id}`} loading="lazy" />
+                    : <span>Sem imagem</span>}
+                </div>
+                <div className="order-overview-details">
+                  <strong>{order.customerName || 'Cliente não informado'}</strong>
+                  <span title={itemLabel}>{itemLabel}</span>
+                  <small>{itemQuantity ?? '—'} peça(s) · {order.sellerEmail || 'Vendedor não identificado'}</small>
+                  <div className="order-overview-links">
+                    {whatsappLink && <a href={whatsappLink} target="_blank" rel="noreferrer">WhatsApp ↗</a>}
+                    <button className="button button-secondary order-open-button" type="button"
+                      aria-expanded={expanded} aria-controls={`order-details-${order.id}`}
+                      onClick={() => setExpandedOrderId(expanded ? null : order.id)}>
+                      {expanded ? 'Ocultar detalhes' : 'Ver detalhes'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {expanded && <div className="order-card-details" id={`order-details-${order.id}`}>
               <div className="order-info-grid">
                 <div><span>Cliente</span><strong>{order.customerName || 'Não informado'}</strong></div>
                 <div><span>WhatsApp</span><strong>{order.whatsapp || 'Não informado'}</strong>{whatsappLink && <a href={whatsappLink} target="_blank" rel="noreferrer">Abrir WhatsApp</a>}</div>
@@ -163,11 +199,13 @@ function OrdersView({ orders, loading, error, onRefresh }) {
 
               <OrderQuoteBuilder order={order} disabled={isWorking || loading} onSaved={onRefresh} />
 
+              </div>}
+
               <div className="order-actions">
                 <button className={`button ${completed ? 'button-secondary' : 'button-success'}`} type="button" disabled={isWorking || loading} onClick={() => toggleCompleted(order)}>
                   {isWorking ? 'Salvando…' : completed ? 'Reabrir pedido' : 'Marcar como concluído'}
                 </button>
-                <button className="button order-delete-button" type="button" disabled={isWorking || loading} onClick={() => removeOrder(order)}>Excluir</button>
+                {expanded && <button className="button order-delete-button" type="button" disabled={isWorking || loading} onClick={() => removeOrder(order)}>Excluir</button>}
               </div>
             </article>
           );
