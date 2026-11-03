@@ -1,5 +1,10 @@
+import { initializeApp } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
+import { getFirestore } from 'firebase-admin/firestore';
 import { defineSecret } from 'firebase-functions/params';
 import { onRequest } from 'firebase-functions/v2/https';
+
+initializeApp();
 
 const REMOVE_BG_API_KEY = defineSecret('REMOVE_BG_API_KEY');
 const MAX_INPUT_BYTES = 8 * 1024 * 1024;
@@ -18,17 +23,53 @@ function removeBgErrorMessage(payload, fallback) {
   return fallback || 'O remove.bg não conseguiu processar esta imagem.';
 }
 
+// A API é paga por uso: permitir somente administradores e vendedores ativos.
+async function canUseRemoveBg(uid) {
+  const firestore = getFirestore();
+  const staff = await firestore.doc(`staff/${uid}`).get();
+  if (staff.exists) {
+    const data = staff.data();
+    return data?.active === true && ['admin', 'seller'].includes(data?.role);
+  }
+  // Compatibilidade com o administrador legado, como no login do aplicativo.
+  const legacyAdmin = await firestore.doc(`admins/${uid}`).get();
+  return legacyAdmin.exists && legacyAdmin.data()?.role === 'admin';
+}
+
 export const removeBackground = onRequest(
   {
     region: 'southamerica-east1',
     memory: '512MiB',
     timeoutSeconds: 60,
+    maxInstances: 2,
     secrets: [REMOVE_BG_API_KEY],
   },
   async (req, res) => {
     if (req.method !== 'POST') {
       res.set('Allow', 'POST');
       return sendJson(res, 405, { error: 'Use POST para remover o fundo.' });
+    }
+
+    const authorization = String(req.headers.authorization || '');
+    const match = /^Bearer\s+(\S+)$/i.exec(authorization);
+    if (!match) return sendJson(res, 401, { error: 'Sessão ausente. Entre no sistema Koleni novamente.' });
+
+    let decoded;
+    try {
+      decoded = await getAuth().verifyIdToken(match[1]);
+    } catch {
+      return sendJson(res, 401, { error: 'Sessão expirada ou inválida. Entre novamente no sistema.' });
+    }
+    if (decoded.firebase?.sign_in_provider === 'anonymous') {
+      return sendJson(res, 403, { error: 'A remoção de fundo está disponível somente para a equipe Koleni.' });
+    }
+    try {
+      if (!await canUseRemoveBg(decoded.uid)) {
+        return sendJson(res, 403, { error: 'Sua conta não está autorizada a consumir créditos do remove.bg.' });
+      }
+    } catch (error) {
+      console.error('Falha ao validar acesso da equipe ao remove.bg', error);
+      return sendJson(res, 503, { error: 'Não foi possível validar o acesso da equipe. Tente novamente.' });
     }
 
     const contentType = String(req.headers['content-type'] || '').split(';')[0].trim().toLowerCase();

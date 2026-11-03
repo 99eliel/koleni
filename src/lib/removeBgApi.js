@@ -1,3 +1,5 @@
+import { auth } from './firebase';
+
 const ENDPOINT = '/api/remove-background';
 const CACHE_NAME = 'koleni-removebg-v1';
 
@@ -74,6 +76,12 @@ export async function removeBackgroundWithRemoveBg(source, options = {}) {
   const cached = await readCachedResult(cacheKey);
   if (cached) return cached;
 
+  const user = auth.currentUser;
+  if (!user || user.isAnonymous) {
+    throw new Error('Entre com sua conta da equipe Koleni para usar a remoção de fundo com IA.');
+  }
+  const idToken = await user.getIdToken();
+
   const sourceResponse = await fetch(source, { cache: 'no-store' });
   if (!sourceResponse.ok) throw new Error('Não foi possível carregar a logo selecionada.');
   const inputBlob = await sourceResponse.blob();
@@ -87,6 +95,7 @@ export async function removeBackgroundWithRemoveBg(source, options = {}) {
     headers: {
       'Content-Type': inputBlob.type,
       'X-Source-Name': 'koleni-logo',
+      Authorization: `Bearer ${idToken}`,
     },
     body: inputBlob,
   });
