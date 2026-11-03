@@ -53,3 +53,13 @@ firebase deploy --project personalizakoleni --only functions:removeBackground
 **Se aparecer erro `API key not configured` ou 503**, confira se definiu o segredo no projeto correto e redeployou a função. **Se o erro for 401/403**, faça login com uma conta da equipe ativa. **Se receber 404**, a função ou a reescrita do Hosting pode não estar publicada.
 
 Nunca use `VITE_REMOVE_BG_API_KEY`, pois todas as variáveis `VITE_*` são públicas no frontend.
+
+## 5. Se a função foi criada mas o botão não funciona
+
+1. Abra `https://personalizakoleni.web.app/api/remove-background` diretamente no navegador. **Esperado: HTTP 405** e o JSON `{"error":"Use POST para remover o fundo."}`. Esse teste GET não consome créditos da API.
+2. Se abrir a página do Koleni (HTML) ou erro 404, a reescrita do Hosting não está ativa: rode `firebase deploy --project personalizakoleni --only hosting` na raiz do projeto, usando **firebase.json** (não `firebase.hosting-only.json`).
+3. Se aparecer HTTP 403 com uma página HTML, verifique a permissão de invocação pública da Cloud Function/Cloud Run (a autenticação do usuário já é validada pelo código da função). Não mude permissões sem conferir os logs.
+4. Se o teste GET retornar 405, o roteamento está correto: execute a remoção com uma logo, anote a mensagem exibida e veja `firebase functions:log --only removeBackground --project personalizakoleni`. Retornos 401/403 em JSON indicam autorização; 402/403 da API remove.bg podem indicar chave ou créditos; 502/503 indicam problema upstream, configuração ou serviço.
+5. Depois de alterar o front-end no GitHub, faça `npm run build` e `firebase deploy --project personalizakoleni --only hosting`, sempre com o `firebase.json` principal. Faça Ctrl+F5 no navegador.
+
+**Não compartilhe a API Key, tokens de autenticação ou outros segredos em capturas de tela ou logs.**

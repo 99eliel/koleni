@@ -4,17 +4,32 @@ const ENDPOINT = '/api/remove-background';
 const CACHE_NAME = 'koleni-removebg-v1';
 
 async function readError(response) {
+  // O corpo de uma Response só pode ser lido uma vez. Em falhas HTML da
+  // hospedagem/Cloud Run, tentar json() e depois text() ocultava o erro real.
+  const body = await response.text().catch(() => '');
+  let payload = null;
   try {
-    const payload = await response.json();
-    return payload?.error || 'Não foi possível remover o fundo com remove.bg.';
+    if (body) payload = JSON.parse(body);
   } catch {
-    try {
-      const text = await response.text();
-      return text || 'Não foi possível remover o fundo com remove.bg.';
-    } catch {
-      return 'Não foi possível remover o fundo com remove.bg.';
-    }
+    // Firebase Hosting e Cloud Run podem devolver uma página HTML de erro.
   }
+  const detail = payload?.error || payload?.message || payload?.errors?.[0]?.title;
+  if (typeof detail === 'string' && detail.trim()) return detail.trim();
+
+  const contentType = String(response.headers.get('content-type') || '').toLowerCase();
+  if (contentType.includes('text/html') || /^\\s*<(?:!doctype|html)/i.test(body)) {
+    return response.status === 404
+      ? 'A rota do remove.bg não foi publicada no Firebase Hosting (HTTP 404). Publique o firebase.json principal, não firebase.hosting-only.json.'
+      : response.status === 403
+        ? 'A função foi bloqueada antes de processar a imagem (HTTP 403). Confira as permissões de invocação no Cloud Run.'
+        : 'O servidor devolveu uma página HTML, não a resposta da API. Verifique o rewrite /api/remove-background no Firebase Hosting.';
+  }
+  if (response.status === 401) return 'Sessão não autorizada (HTTP 401). Saia do Koleni e entre novamente.';
+  if (response.status === 403) return 'Acesso negado (HTTP 403). Verifique a conta da equipe e a permissão da função.';
+  if (response.status === 404) return 'Função removeBackground não encontrada (HTTP 404). Reimplante o Hosting com o firebase.json principal.';
+  if (response.status === 429) return 'Limite de requisições do remove.bg atingido (HTTP 429). Tente novamente mais tarde.';
+  if (response.status === 502 || response.status === 503) return `Serviço remove.bg indisponível ou não configurado (HTTP ${response.status}). Confira os logs da Cloud Function.`;
+  return `Falha ao remover o fundo (HTTP ${response.status}). Consulte os logs da função removeBackground.`;
 }
 
 async function shortHash(value) {
@@ -82,8 +97,13 @@ export async function removeBackgroundWithRemoveBg(source, options = {}) {
   }
   const idToken = await user.getIdToken();
 
-  const sourceResponse = await fetch(source, { cache: 'no-store' });
-  if (!sourceResponse.ok) throw new Error('Não foi possível carregar a logo selecionada.');
+  let sourceResponse;
+  try {
+    sourceResponse = await fetch(source, { cache: 'no-store' });
+  } catch {
+    throw new Error('Não foi possível carregar a logo do armazenamento. Verifique as permissões CORS do Firebase Storage.');
+  }
+  if (!sourceResponse.ok) throw new Error(`Não foi possível carregar a logo (HTTP ${sourceResponse.status}).`);
   const inputBlob = await sourceResponse.blob();
 
   if (!['image/png', 'image/jpeg', 'image/webp'].includes(inputBlob.type)) {
@@ -105,6 +125,11 @@ export async function removeBackgroundWithRemoveBg(source, options = {}) {
     const error = new Error(message);
     error.status = response.status;
     throw error;
+  }
+
+  const responseType = String(response.headers.get('content-type') || '').toLowerCase();
+  if (!responseType.startsWith('image/png')) {
+    throw new Error('A rota /api/remove-background devolveu uma resposta que não é PNG. Provavelmente o Hosting está servindo o site em vez da função. Reimplante com o firebase.json principal.');
   }
 
   const blob = await response.blob();
