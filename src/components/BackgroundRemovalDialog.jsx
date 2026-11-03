@@ -260,7 +260,8 @@ export default function BackgroundRemovalDialog({
       return '';
     });
     try {
-      const result = await removeBackgroundWithRemoveBg(source, { cacheKey });
+      // "Refazer" significa nova chamada; o cache não deve impedir a repetição solicitada.
+      const result = await removeBackgroundWithRemoveBg(source, { cacheKey, bypassCache: Boolean(removeBgBlob) });
       const nextUrl = URL.createObjectURL(result.blob);
       setRemoveBgBlob(result.blob);
       setRemoveBgPreviewUrl((current) => {

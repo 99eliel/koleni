@@ -124,7 +124,7 @@ export async function removeBackgroundWithRemoveBg(source, options = {}) {
   if (!source) throw new Error('Logo inválida.');
 
   const cacheKey = options.cacheKey || source;
-  const cached = await readCachedResult(cacheKey);
+  const cached = options.bypassCache ? null : await readCachedResult(cacheKey);
   if (cached) return cached;
 
   const user = auth.currentUser;
