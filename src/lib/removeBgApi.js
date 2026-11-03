@@ -17,7 +17,7 @@ async function readError(response) {
   if (typeof detail === 'string' && detail.trim()) return detail.trim();
 
   const contentType = String(response.headers.get('content-type') || '').toLowerCase();
-  if (contentType.includes('text/html') || /^\\s*<(?:!doctype|html)/i.test(body)) {
+  if (contentType.includes('text/html') || /^\s*<(?:!doctype|html)/i.test(body)) {
     return response.status === 404
       ? 'A rota do remove.bg não foi publicada no Firebase Hosting (HTTP 404). Publique o firebase.json principal, não firebase.hosting-only.json.'
       : response.status === 403
