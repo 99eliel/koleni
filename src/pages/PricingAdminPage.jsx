@@ -193,7 +193,17 @@ function PricingAdminContent({ user, logout }) {
       <div><span className="catalog-kicker">Área exclusiva do administrador</span><h1>Gestão de preços e produtos</h1><p>Cadastre novos uniformes, detalhe materiais e modelos, controle todas as técnicas de aplicação e mantenha os preços por quantidade em um único lugar.</p></div>
       <div className="pricing-admin-hero-metrics"><div><strong>{products.length}</strong><small>Modelos cadastrados</small></div><div><strong>{activeCount}</strong><small>Ativos para venda</small></div><div><strong>{data?.config.qs.length || '–'}</strong><small>Faixas de volume</small></div></div>
     </section>
-    {error && <div role="alert" className="notice notice-error">{error}</div>}
+    {error && <div role="alert" className="notice notice-error pricing-admin-error">
+      <strong>Não foi possível carregar o catálogo</strong>
+      <p>{error}</p>
+      {error.includes('negada pelo Firestore') && <div className="pricing-admin-diagnostic">
+        <span>Projeto: <code>personalizakoleni</code></span>
+        <span>Acesso à tela: administrador autenticado</span>
+        <span>Confira a aba <strong>Regras</strong> do Cloud Firestore e o caminho informado acima.</span>
+        <a href="https://console.firebase.google.com/project/personalizakoleni/firestore/rules" target="_blank" rel="noreferrer">Abrir regras publicadas do Firestore</a>
+        <a href="https://github.com/99eliel/koleni/blob/main/firestore.rules" target="_blank" rel="noreferrer">Comparar com as regras do repositório</a>
+      </div>}
+    </div>}
     {success && <div role="status" className="notice notice-success">{success}</div>}
     {!loaded && <div className="panel pricing-admin-wait">Carregando catálogo de preços…</div>}
     {loaded && !data && <button className="button button-secondary" type="button" onClick={() => load()}>Tentar novamente</button>}

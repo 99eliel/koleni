@@ -67,13 +67,35 @@ export function legacyProducts(raw) {
   }, `legacy-${String(index + 1).padStart(4, '0')}`));
 }
 
+function pricingReadError(err, operation) {
+  const code = err?.code || 'unknown';
+  if (code === 'permission-denied') {
+    if (operation === 'pricingProducts') {
+      return new Error('A listagem da coleção pricingProducts foi negada pelo Firestore (LIST). O login administrativo já foi validado, mas a regra dessa coleção precisa permitir a leitura da equipe ativa no projeto personalizakoleni. Confirme se a versão publicada contém match /pricingProducts/{productId} com allow read: if isActiveStaff().');
+    }
+    return new Error('A leitura do documento pricingTables/current foi negada pelo Firestore (GET). Confirme se a regra publicada contém match /pricingTables/{tableId} com allow get: if isActiveStaff(), no projeto personalizakoleni.');
+  }
+  if (code === 'unavailable') return new Error(`O Firestore não respondeu à consulta ${operation}. Confira a conexão e tente novamente.`);
+  return new Error(`Falha ao consultar ${operation} [${code}]: ${err?.message || 'erro desconhecido'}`);
+}
+
 export async function loadPricingCatalog() {
-  const cfgSnapshot = await getDoc(PRICING_CONFIG_REF);
+  let cfgSnapshot;
+  try {
+    cfgSnapshot = await getDoc(PRICING_CONFIG_REF);
+  } catch (err) {
+    throw pricingReadError(err, 'pricingTables/current');
+  }
   const raw = cfgSnapshot.exists() ? cfgSnapshot.data() : null;
   if (!raw) return { config: cleanConfig(DEFAULT_CONFIG), products: [], legacy: false, configured: false };
   const config = cleanConfig(raw);
   if (config.catalogVersion === 2) {
-    const docs = await getDocs(collection(db, PRICING_PRODUCTS));
+    let docs;
+    try {
+      docs = await getDocs(collection(db, PRICING_PRODUCTS));
+    } catch (err) {
+      throw pricingReadError(err, 'pricingProducts');
+    }
     const products = docs.docs.map((entry) => normalizeProduct(entry.data(), entry.id));
     products.sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name, 'pt-BR'));
     return { config, products, legacy: false, configured: true };
