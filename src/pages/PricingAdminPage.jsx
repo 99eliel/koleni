@@ -84,6 +84,8 @@ function PricingAdminContent({ user, logout }) {
       name: '', active: false, category: source.category,
       sortOrder: data.products.length,
       prices: copyJson(source.prices),
+      belowMinFactor: source.belowMinFactor,
+      setupDivisors: copyJson(source.setupDivisors),
     }, crypto.randomUUID());
     setDraft(empty); setOriginal(null); setSelectedId(empty.id); setPhoto(null); setMode('products'); setGroup('N'); clearNotice();
     setSuccess('Nova peça criada com a matriz de preços de referência. Revise cada técnica e seus valores antes de ativar.');
@@ -102,7 +104,13 @@ function PricingAdminContent({ user, logout }) {
       if (data.legacy) throw new Error('Ative o cadastro individual antes de editar.');
       if (data.products.some((p) => p.id !== draft.id && p.name.trim().toLocaleLowerCase('pt-BR') === draft.name.trim().toLocaleLowerCase('pt-BR'))) throw new Error('Já existe outra peça com este nome.');
       let entry = normalizeProduct(draft);
-      if (entry.active) validateProduct(entry, data.config.qs, priceCodesForConfig(data.config));
+      if (entry.active) {
+        validateProduct(entry, data.config.qs, priceCodesForConfig(data.config));
+        if (data.config.pricingEngine === 'shared-setup-v3' &&
+          (entry.setupDivisors.length !== data.config.qs.length || entry.setupDivisors.some((n)=>!(n>0)))) {
+          throw new Error('Preencha os fatores de rateio por faixa antes de ativar a peça.');
+        }
+      }
       if (photo) {
         if (!photo.type.startsWith('image/') || photo.size > 5 * 1024 * 1024) throw new Error('Selecione uma imagem de até 5 MB.');
         const storagePath = `pricing-products/${entry.id}/${Date.now()}-${photo.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`;
@@ -191,7 +199,7 @@ function PricingAdminContent({ user, logout }) {
 
   const products = data?.products || [];
   const displayed = products.filter((p) => (showInactive || p.active) && [p.name, p.category, p.modelCode, p.fabric].join(' ').toLocaleLowerCase('pt-BR').includes(search.toLocaleLowerCase('pt-BR')));
-  const activeCount = products.filter((p) => p.active).length;
+  const activeCount = products.filter((p) => p.active && priceCodesForConfig(data?.config).every((code)=>p.prices?.[code]?.length===data?.config.qs.length && p.prices[code].every((n)=>Number.isInteger(n)&&n>0))).length;
   const codes = Object.keys(draft?.prices || {}).filter((code) => code.startsWith(group) && (`${code} ${prettyCode(code)}`).toLocaleLowerCase('pt-BR').includes(codeSearch.toLocaleLowerCase('pt-BR')));
   const isSaved = !!products.find((p) => p.id === draft?.id);
   const categories = [...new Set(products.map((p) => p.category).filter(Boolean))].sort();
@@ -247,6 +255,19 @@ function PricingAdminContent({ user, logout }) {
           </>}
           <label>Identificação da versão da tabela<input value={settings.gerado} maxLength={60} placeholder="Ex.: Novembro de 2026" onChange={(e) => setSettings((prev) => ({...prev, gerado:e.target.value}))} disabled={busy || editingLocked}/></label>
         </div>
+        {settings.pricingEngine === 'shared-setup-v3' && <details className="pricing-admin-setup-costs">
+          <summary><strong>Custos de tela/matriz por tipo de arte</strong> — abrir controle de valores</summary>
+          <p>Valores de preparação em reais, cobrados uma vez por arte e distribuídos entre os itens que a reutilizam.</p>
+          <div className="pricing-admin-settings-grid">
+            {Object.entries(settings.tc || {}).sort(([a],[b])=>a.localeCompare(b)).map(([code, value])=>
+              <label key={code}>{prettyCode(code)} · {code}
+                <input type="number" min="0" step="0.01" value={value}
+                  disabled={busy || editingLocked}
+                  onChange={(e)=>setSettings((prev)=>({...prev,tc:{...prev.tc,[code]:Number(e.target.value)}}))}/>
+              </label>
+            )}
+          </div>
+        </details>}
         <button type="button" className="button button-primary" onClick={saveSettings} disabled={busy || editingLocked}>{busy?'Salvando…':'Salvar regras gerais'}</button>
       </section>}
       {mode === 'products' && <div className="pricing-admin-layout">
@@ -259,7 +280,7 @@ function PricingAdminContent({ user, logout }) {
           </div>
         </aside>
         <section className="panel pricing-admin-editor">
-          {!draft && <div className="pricing-admin-placeholder"><h2>Cadastre os preços da confecção</h2><p>Importe a tabela Koleni para começar. Depois você poderá criar modelos e preencher todos os detalhes.</p><label className="button button-primary pricing-import">Importar tabela JSON<input type="file" accept=".json" onChange={importJson}/></label></div>}
+          {!draft && <div className="pricing-admin-placeholder"><h2>Cadastre os preços da confecção</h2><p>Importe a tabela Koleni para começar. Depois você poderá criar modelos e preencher todos os detalhes.</p><label className="button button-primary pricing-import">Importar HTML ou JSON<input type="file" accept=".html,.htm,.json,text/html,application/json" onChange={importJson}/></label></div>}
           {draft && <>
             <div className="pricing-admin-editor-head"><div><span className="catalog-kicker">{isSaved?'Editar cadastro':'Nova peça ainda não salva'}</span><h2>{draft.name || 'Novo modelo'}</h2><p>{dirty || photo ? 'Alterações pendentes de salvamento' : 'Dados sincronizados com o Firebase'}</p></div><div className="pricing-admin-editor-actions"><button type="button" className="button button-secondary" onClick={duplicateSelected} disabled={busy || editingLocked}>Duplicar modelo</button><button type="button" className="button button-primary" onClick={saveCurrent} disabled={busy || editingLocked}>{busy?'Salvando…':'Salvar alterações'}</button></div></div>
             <fieldset disabled={busy || editingLocked} className="pricing-admin-fieldset"><legend>Identificação e informações da peça</legend>
@@ -281,12 +302,30 @@ function PricingAdminContent({ user, logout }) {
               {draft.extraFields.map((field,index) => <div key={index} className="pricing-admin-extra-row"><input aria-label="Nome do campo" placeholder="Ex.: Gramatura" value={field.label} maxLength={90} onChange={(e)=>update('extraFields',draft.extraFields.map((f,i)=>i===index?{...f,label:e.target.value}:f))}/><input aria-label="Valor do campo" placeholder="Ex.: 180 g/m²" value={field.value} maxLength={400} onChange={(e)=>update('extraFields',draft.extraFields.map((f,i)=>i===index?{...f,value:e.target.value}:f))}/><button type="button" className="button button-secondary" onClick={()=>update('extraFields',draft.extraFields.filter((_,i)=>i!==index))}>Remover</button></div>)}
               <label className="pricing-admin-activation"><input type="checkbox" checked={draft.active} onChange={(e) => update('active',e.target.checked)}/><span><strong>Disponibilizar esta peça no simulador do vendedor</strong><small>Se inativa, a peça permanece cadastrada e editável, mas não aparece nos orçamentos novos.</small></span></label>
             </fieldset>
+            {data.config.pricingEngine === 'shared-setup-v3' && <fieldset disabled={busy || editingLocked} className="pricing-admin-fieldset">
+              <legend>Fatores técnicos do custo de produção</legend>
+              <p>Use os números da planilha. Eles alteram a formação dos preços abaixo da primeira faixa e o rateio de tela ou matriz.</p>
+              <div className="pricing-admin-form-grid">
+                <label>Fator abaixo da primeira faixa
+                  <input type="number" min="0.01" step="0.0001" value={draft.belowMinFactor}
+                    onChange={(e)=>update('belowMinFactor',Number(e.target.value))}/>
+                </label>
+                {(data.config.qs||[]).map((tier,index)=><label key={tier}>Fator de rateio · {tier.toLocaleString('pt-BR')} peças
+                  <input type="number" min="0.01" step="0.0001" value={draft.setupDivisors[index]||''}
+                    onChange={(e)=>update('setupDivisors', data.config.qs.map((_,i)=>i===index?Number(e.target.value):(draft.setupDivisors[i]||1)))}/>
+                </label>)}
+              </div>
+            </fieldset>}
             <section className="pricing-admin-price-section"><div className="pricing-admin-price-head"><div><h3>Matriz de preços por técnica</h3><p>Valores em R$ por peça. Cada linha preserva uma combinação da planilha original. Escolha a técnica para facilitar a edição.</p></div><span>{Object.keys(draft.prices).length} combinações</span></div>
               <div className="pricing-admin-group-bar">{groups.map(([value,label])=><button type="button" key={value} className={group===value?'active':''} onClick={()=>{setGroup(value);setCodeSearch('');}}>{label}<small>{Object.keys(draft.prices).filter((code)=>code.startsWith(value)).length}</small></button>)}</div>
               <label className="pricing-admin-code-search">Filtrar combinação<input type="search" value={codeSearch} onChange={(e)=>setCodeSearch(e.target.value)} placeholder="Ex.: 2 posições, arte complexa, código S1P100…"/></label>
               <div className="pricing-admin-matrix-scroller"><table><thead><tr><th>Aplicação / código</th>{data.config.qs.map((tier)=><th key={tier}>{tier.toLocaleString('pt-BR')} peças</th>)}</tr></thead><tbody>{codes.map((code)=><tr key={code}><th><strong>{prettyCode(code)}</strong><small>{code}</small></th>{(draft.prices[code]||[]).map((cents,idx)=><td key={`${code}-${idx}`}><input aria-label={`${prettyCode(code)}, ${data.config.qs[idx]} peças`} type="number" min="0" step="0.01" inputMode="decimal" disabled={busy || editingLocked} value={cents>0?String(cents/100):''} onChange={(e)=>patchPrice(code,idx,e.target.value)} placeholder="0,00"/></td>)}</tr>)}
                 {!codes.length && <tr><td colSpan={data.config.qs.length+1}>Nenhuma combinação encontrada.</td></tr>}</tbody></table></div>
-              <small className="pricing-admin-price-note">Os preços são armazenados em centavos para evitar erros de arredondamento. A simulação continua usando o cálculo original para faixas intermediárias e custo de preparação.</small>
+              <small className="pricing-admin-price-note">
+                Os preços são armazenados em centavos. {data.config.pricingEngine === 'shared-setup-v3'
+                  ? 'A tabela de novembro calcula posições adicionais a partir da primeira, além de ratear tela/matriz por arte.'
+                  : 'A simulação mantém o motor da tabela antiga.'}
+              </small>
             </section>
             <footer className="pricing-admin-editor-footer"><div>{dirty||photo?'● Existem alterações não salvas':'Cadastro salvo'} · {draft.active?'Ativo':'Inativo'}</div><div>{isSaved && <button type="button" className="button button-secondary pricing-admin-danger" onClick={deleteCurrent} disabled={busy || editingLocked}>Excluir peça</button>}<button type="button" className="button button-primary" onClick={saveCurrent} disabled={busy || editingLocked}>{busy?'Salvando…':'Salvar peça e preços'}</button></div></footer>
           </>}
