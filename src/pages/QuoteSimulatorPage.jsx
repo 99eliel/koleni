@@ -133,7 +133,8 @@ export default function QuoteSimulatorPage({ user, profile, isAdmin = false, log
       total,
       estimatedTime: `${received.deliveryDays || 30} dias (estimativa)`,
       notes: terms,
-      simulatorSource: 'tabela-koleni-2026-10-30',
+      simulatorSource: pricing?.gerado ? `tabela-koleni-${pricing.gerado}` : 'tabela-koleni',
+      pricingEngine: pricing?.pricingEngine || 'legacy-v2',
     };
     try {
       saveSimulatorQuoteDraft(user.uid, cart, quote);

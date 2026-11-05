@@ -13,7 +13,7 @@ export function parseKoleniHtmlPricing(html, filename='') {
   const produtos=[], p=[], r=[], dv=[];
   const row = /D\.produtos\.push\(("(?:\\.|[^"\\])*")\);D\.p\.push\((\{[^\n]+?\})\);D\.r\.push\((\d+(?:\.\d+)?\/1e4)\);D\.dv\.push\((\[[^\]]+\])\);/g;
   for (const match of html.matchAll(row)) {
-    produtos.push(JSON.parse(match[1])); p.push(parseLiteral(match[2]));
+    produtos.push(String(JSON.parse(match[1])).trim()); p.push(parseLiteral(match[2]));
     r.push(parseLiteral(match[3])); dv.push(parseLiteral(match[4]));
   }
   if (!produtos.length || produtos.length !== p.length || produtos.length !== r.length || produtos.length !== dv.length ||
