@@ -2,12 +2,13 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '../lib/firebase';
+import { parseKoleniHtmlPricing } from '../lib/pricingHtmlImport';
 import AdminAuth from '../components/AdminAuth';
 import MartinpelBrand from '../components/MartinpelBrand';
 import {
   cleanConfig, DEFAULT_CONFIG, exportLegacyTable, importLegacyCatalog,
   loadPricingCatalog, migrateLegacyPricing, normalizeProduct, removeProduct,
-  saveGlobalPricing, saveJsonDownload, saveProduct, validateProduct,
+  saveGlobalPricing, saveJsonDownload, saveProduct, validateProduct, priceCodesForConfig,
 } from '../lib/pricingCatalog';
 import '../pricing-admin.css';
 
@@ -101,7 +102,7 @@ function PricingAdminContent({ user, logout }) {
       if (data.legacy) throw new Error('Ative o cadastro individual antes de editar.');
       if (data.products.some((p) => p.id !== draft.id && p.name.trim().toLocaleLowerCase('pt-BR') === draft.name.trim().toLocaleLowerCase('pt-BR'))) throw new Error('Já existe outra peça com este nome.');
       let entry = normalizeProduct(draft);
-      if (entry.active) validateProduct(entry, data.config.qs, Object.keys(data.products[0]?.prices || entry.prices));
+      if (entry.active) validateProduct(entry, data.config.qs, priceCodesForConfig(data.config));
       if (photo) {
         if (!photo.type.startsWith('image/') || photo.size > 5 * 1024 * 1024) throw new Error('Selecione uma imagem de até 5 MB.');
         const storagePath = `pricing-products/${entry.id}/${Date.now()}-${photo.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`;
@@ -150,12 +151,28 @@ function PricingAdminContent({ user, logout }) {
     if (!file || busy) return;
     setBusy(true); clearNotice();
     try {
-      if (file.size > 3_000_000) throw new Error('Arquivo acima de 3 MB.');
-      const parsed = JSON.parse(await file.text());
+      if (file.size > 10_000_000) throw new Error('Arquivo acima de 10 MB.');
+      const content=await file.text();
+      const parsed=/\.html?$/i.test(file.name)?parseKoleniHtmlPricing(content,file.name):JSON.parse(content);
       if (!Array.isArray(parsed.produtos) || !Array.isArray(parsed.p) || !parsed.qs) throw new Error('Arquivo não é uma tabela de preços Koleni.');
-      if (!window.confirm(`Importar ${parsed.produtos.length} modelos? Peças com o mesmo nome terão os preços substituídos pelos do arquivo. Outras peças serão preservadas. Recomenda-se fazer um backup antes.`)) return;
+      const existing=data?.products||[];
+      const oldNames=new Set(existing.map((item)=>item.name.trim().toLowerCase()));
+      const newNames=new Set(parsed.produtos.map((name)=>name.trim().toLowerCase()));
+      const added=parsed.produtos.filter((name)=>!oldNames.has(name.trim().toLowerCase())).length;
+      const preserved=existing.filter((item)=>!newNames.has(item.name.trim().toLowerCase())).length;
+      const warning=parsed.pricingEngine==='shared-setup-v3'
+        ? '\nA nova tabela usa rateio por arte. Modelos antigos fora do arquivo podem ficar indisponíveis até receberem preços completos.' : '';
+      if (!window.confirm(
+        `CONFERIR ATUALIZAÇÃO – ${parsed.gerado || 'Koleni'}\n`+
+        `${parsed.produtos.length} modelos (${added} novos; ${parsed.produtos.length-added} existentes).\n`+
+        `${preserved} modelos antigos serão preservados.\n`+
+        'Preços dos modelos com o mesmo nome serão substituídos.\n' +
+        'Orçamentos anteriores permanecerão intactos.' + warning +
+        '\n\nBaixar backup e publicar estes preços no Firebase?'
+      )) return;
+      if(data) downloadBackup();
       await importLegacyCatalog(parsed, data?.legacy ? [] : data?.products || [], user.uid, data?.legacy ? null : data?.config);
-      await load(); setSuccess(`${parsed.produtos.length} modelos importados. Confira o catálogo e seus preços.`);
+      await load(); setSuccess(`${parsed.produtos.length} modelos atualizados. Confira os valores no simulador.`);
     } catch (err) { setError(`Falha na importação: ${err.message}`); }
     finally { setBusy(false); }
   }
@@ -211,7 +228,7 @@ function PricingAdminContent({ user, logout }) {
       {data.legacy && <section className="pricing-admin-legacy panel"><div><strong>A tabela original está protegida</strong><p>Para gerenciar cada modelo individualmente, converta os produtos atuais para o novo cadastro. Os valores e combinações existentes não serão alterados.</p></div><button type="button" className="button button-primary" disabled={busy} onClick={migrate}>Ativar controle individual de peças</button></section>}
       <section className="pricing-admin-tools panel">
         <div className="pricing-admin-tabs"><button type="button" className={mode==='products'?'active':''} onClick={() => {setMode('products');clearNotice();}}>Produtos e preços</button><button type="button" className={mode==='settings'?'active':''} onClick={() => {if(allowDiscard())setMode('settings');}}>Regras gerais</button></div>
-        <div className="pricing-admin-utilities"><button type="button" className="button button-secondary" onClick={downloadBackup}>Baixar backup JSON</button><label className="button button-secondary pricing-import">Importar tabela JSON<input ref={fileInputRef} type="file" accept=".json,application/json" onChange={importJson} disabled={busy} /></label><button type="button" className="button button-secondary" onClick={() => {if(allowDiscard())load();}} disabled={busy}>Atualizar dados</button></div>
+        <div className="pricing-admin-utilities"><button type="button" className="button button-secondary" onClick={downloadBackup}>Baixar backup JSON</button><label className="button button-secondary pricing-import">Atualizar preços (HTML/JSON)<input ref={fileInputRef} type="file" accept=".html,.htm,.json,text/html,application/json" onChange={importJson} disabled={busy} /></label><button type="button" className="button button-secondary" onClick={() => {if(allowDiscard())load();}} disabled={busy}>Atualizar dados</button></div>
       </section>
       {mode === 'settings' && <section className="panel pricing-admin-settings">
         <div><h2>Regras gerais do simulador</h2><p>Esses parâmetros afetam todas as peças. Os preços dos modelos continuam individuais.</p></div>
@@ -223,6 +240,11 @@ function PricingAdminContent({ user, logout }) {
           <label>Prazo padrão de entrega (dias)<input type="number" min="1" max="730" value={settings.deliveryDays} onChange={(e) => setSettings((prev) => ({...prev, deliveryDays:Number(e.target.value)}))} disabled={busy || editingLocked}/></label>
           <label>Validade do orçamento (dias)<input type="number" min="1" max="365" value={settings.validDays} onChange={(e) => setSettings((prev) => ({...prev, validDays:Number(e.target.value)}))} disabled={busy || editingLocked}/></label>
           <label>Tamanho padrão da arte<input value={settings.artSizeCm} maxLength={80} onChange={(e) => setSettings((prev) => ({...prev, artSizeCm:e.target.value}))} disabled={busy || editingLocked}/></label>
+          {settings.pricingEngine === 'shared-setup-v3' && <>
+            <label>Bandeira: limite (peças)<input type="number" min="1" step="1" value={settings.band.lim} onChange={(e)=>setSettings((prev)=>({...prev,band:{...prev.band,lim:Number(e.target.value)}}))} disabled={busy||editingLocked}/></label>
+            <label>Bandeira até o limite (R$/peça)<input type="number" min="0" step="0.01" value={settings.band.a} onChange={(e)=>setSettings((prev)=>({...prev,band:{...prev.band,a:Number(e.target.value)}}))} disabled={busy||editingLocked}/></label>
+            <label>Bandeira acima do limite (R$/peça)<input type="number" min="0" step="0.01" value={settings.band.b} onChange={(e)=>setSettings((prev)=>({...prev,band:{...prev.band,b:Number(e.target.value)}}))} disabled={busy||editingLocked}/></label>
+          </>}
           <label>Identificação da versão da tabela<input value={settings.gerado} maxLength={60} placeholder="Ex.: Novembro de 2026" onChange={(e) => setSettings((prev) => ({...prev, gerado:e.target.value}))} disabled={busy || editingLocked}/></label>
         </div>
         <button type="button" className="button button-primary" onClick={saveSettings} disabled={busy || editingLocked}>{busy?'Salvando…':'Salvar regras gerais'}</button>
