@@ -173,7 +173,7 @@ $("logo").src=LOGO;
 D.p=D.p.map(function(o){for(var k in o)o[k]=o[k].map(function(v){return v/100});return o});
 var brl=function(v){return v.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})};
 var pc=function(v){return (v*100).toLocaleString("pt-BR",{maximumFractionDigits:1})+"%"};
-var tab=0,cur=null,IT=[];
+var tab=0,cur=null,IT=[],VK=-1;
 var PRAZO=30,VALID=15,HOJE=new Date(),dbr=function(d){return d.toLocaleDateString("pt-BR")},ATE=new Date(HOJE.getTime()+VALID*864e5);
 var tPz=PRAZO+" dias",tVl=VALID+" dias (válido até "+dbr(ATE)+")";
 $("dt").textContent=dbr(HOJE);$("pz").textContent=tPz;$("vl").textContent=tVl;
@@ -270,7 +270,7 @@ function calc(){
   if(falta()>0){limpaPreco("Preencha os campos em amarelo");$("tb").innerHTML="<tr><td colspan='4'>Escolha produto e aplicação para ver a tabela.</td></tr>";return;}
   var arr=apArr(),q=parseInt($("qtd").value,10)||0,i=idx(q);
   if(!arr){limpaPreco("Esta combinação não está disponível na tabela do modelo. Avise o administrador.");return;}
-  var su=suInfo(),Qo=su?grpQ(su.g,-1):0,Tg=su?grpT(su.g,su.T,-1):0;
+  var su=suInfo(),Qo=su?grpQ(su.g,VK):0,Tg=su?grpT(su.g,su.T,VK):0;
   var sh=function(n){return su&&n>0?Tg*rate(su.pi,n)/(Qo+n):0};
   var f=[1,1-D.avista,1-D.t3][tab],h="",a0=arr[0]+adB(D.qs[0])+sh(D.qs[0]);
   if(i<0&&q>0){
@@ -296,11 +296,11 @@ function total(){var s=0;IT.forEach(function(x){s+=x.p*x.q});return s;}
 function lista(){reprice();var h="";IT.forEach(function(x,k){h+="<tr"+(x.f?" class='clk' title='Clique para ver a tabela de preços deste item' onclick='ver("+k+")'":"")+"><td>"+(k+1)+"</td><td class='l'>"+x.n+"</td><td class='l'>"+x.ap+"</td><td>"+x.q.toLocaleString("pt-BR")+"</td><td>"+brl(x.p)+"</td><td>"+brl(x.p*x.q)+"</td><td><button class='del' title='Remover' onclick='event.stopPropagation();rm("+k+")'>❌</button></td></tr>"});
 if(!IT.length)h="<tr><td colspan='7'>Nenhum produto adicionado ainda. Preencha acima e clique em ➕ Adicionar.</td></tr>";
 $("itb").innerHTML=h;var s=total();$("gt").textContent=brl(s);$("gp").textContent=brl(s);$("ga").textContent=brl(s*(1-D.avista));}
-function rm(k){IT.splice(k,1);reprice();salva();lista();}function ver(k){var x=IT[k];if(!x||!x.f)return;["prod","qtd","tipo","pos","cor","esc","tela","mat","band","arte"].forEach(function(id){$(id).value=x.f[id]||""});calc();$("sit").innerHTML="<div class='tip'>Mostrando o item "+(k+1)+" do orçamento. Ele já está na lista – só clique em ➕ Adicionar se quiser incluir outro igual.</div>";$("tb").scrollIntoView({behavior:"smooth",block:"center"});}
+function rm(k){IT.splice(k,1);VK=-1;reprice();salva();lista();}function ver(k){var x=IT[k];if(!x||!x.f)return;["prod","qtd","tipo","pos","cor","esc","tela","mat","band","arte"].forEach(function(id){$(id).value=x.f[id]||""});VK=k;calc();$("sit").innerHTML="<div class='tip'>Mostrando o item "+(k+1)+" do orçamento. Ele já está na lista – só clique em ➕ Adicionar se quiser incluir outro igual.</div>";$("tb").scrollIntoView({behavior:"smooth",block:"center"});}
 $("add").onclick=function(){if(!cur){alert("Preencha todos os campos em amarelo antes de adicionar.");return;}
-IT.push(cur);reprice();salva();lista();["prod","qtd","tipo","pos","cor","esc","tela","mat","band","arte"].forEach(function(x){$(x).value=""});$("band").value="0";calc();$("itens").scrollIntoView({behavior:"smooth"});};
+IT.push(cur);VK=-1;reprice();salva();lista();["prod","qtd","tipo","pos","cor","esc","tela","mat","band","arte"].forEach(function(x){$(x).value=""});$("band").value="0";calc();$("itens").scrollIntoView({behavior:"smooth"});};
 $("limpa").onclick=function(){if(IT.length&&confirm("Apagar todos os itens deste orçamento?")){IT=[];salva();lista();}};
-document.querySelectorAll("input,select").forEach(function(e){e.addEventListener("input",calc);e.addEventListener("change",calc)});
+document.querySelectorAll("input,select").forEach(function(e){e.addEventListener("input",function(){VK=-1;calc();});e.addEventListener("change",function(){VK=-1;calc();});});
 document.querySelectorAll(".tabs button").forEach(function(b){b.onclick=function(){tab=+b.dataset.t;document.querySelectorAll(".tabs button").forEach(function(x){x.classList.toggle("on",x===b)});calc();}});
 $("wa").onclick=function(){if(!$("cli").value){alert("Preencha o cliente / nº do orçamento.");$("cli").focus();return;}if(!$("con").value){alert("Preencha o contato de quem solicitou.");$("con").focus();return;}if(!$("ven").value){alert("Preencha o nome do vendedor.");$("ven").focus();return;}
 if(!IT.length){alert("Adicione pelo menos um produto ao orçamento.");return;}
