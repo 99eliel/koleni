@@ -89,6 +89,10 @@ footer{color:#888;padding:14px}
 <div><label>A arte é complexa?</label><select id="esc" class="req"><option value="">Selecione…</option><option value="0">Não</option><option value="1">Sim</option></select></div></div>
 <div class="silk"><label>Silk – tela nova?</label><select id="tela" class="req"><option value="">Selecione…</option><option value="1">Sim</option><option value="0">Não (tela já existe)</option></select></div>
 <div class="bord"><label>Bordado – matriz nova?</label><select id="mat" class="req"><option value="">Selecione…</option><option value="1">Sim</option><option value="0">Não (matriz já existe)</option></select></div>
+<div class="v3only hide arte"><label>Qual arte? (peças com a mesma arte dividem o custo da tela/matriz)</label>
+<select id="arte" class="req"><option value="">Selecione…</option><option>Arte 1</option><option>Arte 2</option><option>Arte 3</option><option>Arte 4</option><option>Arte 5</option><option>Arte 6</option></select></div>
+<div class="v3only hide"><label>Bandeira do Brasil (opcional)</label>
+<select id="band"><option value="0" selected>Não adicionar</option><option value="1">Adicionar bandeira do Brasil</option></select></div>
 </section>
 <section class="card"><h2>💰 Preço deste produto</h2>
 <div style="font-size:13px">Preço sugerido por peça</div><div class="big" id="pp">-</div>
@@ -117,13 +121,13 @@ footer{color:#888;padding:14px}
 <section class="card full"><h2>📉 Preço por quantidade (produto selecionado)</h2>
 <div class="tabs"><button data-t="0" class="on">Tabela 1 • Preço cheio</button><button data-t="1" id="bt2">Tabela 2 • À vista</button><button data-t="2">Tabela 3</button></div>
 <table><thead><tr><th>Quantidade (peças)</th><th>Preço por peça</th><th>Valor total</th><th>Economia x 1ª faixa</th></tr></thead><tbody id="tb"></tbody></table>
-<div class="tip">O preço vale para a faixa: ex.: de 50 a 99 peças usa o preço de 50 peças. Cada produto do orçamento usa a faixa da sua própria quantidade. Arte considerada: até 10 × 10 cm. Abaixo da 1ª faixa (a partir de 1 peça) o preço é calculado com o set-up (acerto, telas, matriz) dividido pelas peças do pedido. Artes maiores: consulte o gestor.</div>
+<div class="tip">O preço vale para a faixa: ex.: de 50 a 99 peças usa o preço de 50 peças. Cada produto do orçamento usa a faixa da sua própria quantidade. Arte considerada: até 10 × 10 cm. Abaixo da 1ª faixa (a partir de 1 peça) o preço é calculado com o set-up (acerto, telas, matriz) dividido pelas peças do pedido. Artes maiores: consulte o gestor. <span id="bandtip"></span></div>
 </section>
 </main>
 <footer>Koleni Uniformes • Tabela gerada em <span id="ger"></span> a partir da planilha de custos. Em caso de dúvida, consulte o gestor.</footer>
 <script>
 var LOGO="./koleni-logo.svg";
-var D={qs:[10,20,50,100,250,500,1000,3000],avista:500/1e4,t3:1000/1e4,parc:3,gerado:"30/10/2026",produtos:[],p:[]};
+var D={qs:[10,20,50,100,250,500,1000,3000],avista:500/1e4,t3:1000/1e4,parc:3,gerado:"30/10/2026",pricingEngine:"legacy-v2",band:{lim:40,a:0,b:0},tc:{},r:[],dv:[],produtos:[],p:[]};
 
 
 
@@ -186,37 +190,115 @@ $("bt2").textContent="Tabela 2 • À vista ("+pc(D.avista)+")";
 function vis(e){return e.offsetParent!==null}
 function marca(){document.querySelectorAll(".req").forEach(function(e){e.classList.toggle("vz",vis(e)&&!e.value)})}
 function falta(){var n=0;document.querySelectorAll(".req").forEach(function(e){if(e.id!=="cli"&&e.id!=="con"&&e.id!=="ven"&&vis(e)&&!e.value)n++});return n;}
-function key(){var t=$("tipo").value,p=$("pos").value,s=$("tam").value;
-if(t==="Nenhuma")return "N";if(t==="DTF")return "D"+p+s;if(t==="Bordado")return "B"+p+s+$("mat").value;
-return "S"+p+s+$("cor").value+$("esc").value+$("tela").value;}
-function apTxt(){var t=$("tipo").value;if(t==="Nenhuma")return "Sem aplicação";var s=t+" – "+$("pos").value+" posição(ões)";
-if(t==="Silk")s+=", "+$("cor").value+" cor(es)"+($("esc").value==="1"?", arte complexa":"");return s;}
-function idx(q){var k=-1;D.qs.forEach(function(b,i){if(q>=b)k=i});return k;}function pr(a,q){var i=idx(q);if(i<0){if(q<1)return 0;var q0=D.qs[0],q1=D.qs[1],k=(a[0]-a[1])/(1/q0-1/q1);if(!(k>0))return a[0];return Math.round((a[0]-k/q0+k/q)*100)/100;}if(i>=D.qs.length-1)return a[i];var lo=D.qs[i],hi=D.qs[i+1],st=Math.floor((q-lo)/10)*10,v=a[i]+(a[i+1]-a[i])*st/(hi-lo);return Math.max(a[i+1],Math.round(v*100)/100);}
+/** Motor híbrido: legado sem rateio; novembro/2026 com posição-base, arte compartilhada e bandeira. */
+var R=function(v){return Math.round(v*100)/100};
+function v3(){return D.pricingEngine==="shared-setup-v3";}
+function key(){
+  var t=$("tipo").value,p=v3()?"1":$("pos").value,s=$("tam").value;
+  if(t==="Nenhuma")return "N";
+  if(t==="DTF")return "D"+p+s;
+  if(t==="Bordado")return "B"+p+s+$("mat").value;
+  return "S"+p+s+$("cor").value+$("esc").value+$("tela").value;
+}
+function tKey(){return v3()&&(($("tipo").value==="Silk"&&$("tela").value==="1")||($("tipo").value==="Bordado"&&$("mat").value==="1"));}
+function keyN(){var k=key();return tKey()?k.slice(0,-1)+"0":k;}
+function apArr(){
+  var i=Number($("prod").value),o=D.p[i],a=o&&o[keyN()],n=parseInt($("pos").value,10)||1;
+  if(!a)return null;
+  var r=v3()?(D.r[i]||1):1,base=o.N;
+  if(v3()&&$("tipo").value!=="Nenhuma"&&n>1){
+    var scaled=a.map(function(value,j){return R(base[j]+(value-base[j])*n);});
+    scaled.r=r;return scaled;
+  }
+  a.r=r;return a;
+}
+function aTx(){return tKey()&&$("arte").value?", "+($("tipo").value==="Silk"?"tela":"matriz")+" nova – "+$("arte").value:"";}
+function bTx(){return v3()&&$("band").value==="1"?" + Bandeira do Brasil":"";}
+function apTxt(){
+  var t=$("tipo").value;if(t==="Nenhuma")return "Sem aplicação"+bTx();
+  var s=t+" – "+$("pos").value+" posição(ões)";
+  if(t==="Silk")s+=", "+$("cor").value+" cor(es)"+($("esc").value==="1"?", arte complexa":"");
+  return s+aTx()+bTx();
+}
+function idx(q){var k=-1;D.qs.forEach(function(b,i){if(q>=b)k=i});return k;}
+function pr(a,q){
+  var i=idx(q);if(i<0){
+    if(q<1)return 0;
+    var q0=D.qs[0],q1=D.qs[1],k=(a[0]-a[1])/(1/q0-1/q1);
+    if(!(k>0))return R(a[0]*(a.r||1));
+    return R((a[0]-k/q0+k/q)*(a.r||1));
+  }
+  if(i>=D.qs.length-1)return a[i];
+  var lo=D.qs[i],hi=D.qs[i+1],st=Math.floor((q-lo)/10)*10,v=a[i]+(a[i+1]-a[i])*st/(hi-lo);
+  return Math.max(a[i+1],R(v));
+}
+function adB(q){return v3()&&$("band").value==="1"&&q>0?(q<=D.band.lim?D.band.a:D.band.b):0;}
+function prB(a,q){return R(pr(a,q)+adB(q));}
+function suInfo(){
+  if(!tKey()||!$("arte").value)return null;
+  var n=parseInt($("pos").value,10)||1;
+  return {g:$("tipo").value+"|"+$("arte").value,a:$("arte").value,T:(D.tc[key()]||0)*n,pi:Number($("prod").value)};
+}
+function rate(pi,q){
+  var i=idx(q),d=(D.dv[pi]||[])[Math.max(i,0)]||1,r=i<0?(D.r[pi]||1):1;
+  return r/d;
+}
+function grpQ(g,ex){var s=0;IT.forEach(function(x,k){if(k!==ex&&x.su&&x.su.g===g)s+=x.q;});return s;}
+function grpT(g,T,ex){var m=T||0;IT.forEach(function(x,k){if(k!==ex&&x.su&&x.su.g===g)m=Math.max(m,x.su.T);});return m;}
+function reprice(){
+  if(!v3())return;
+  IT.forEach(function(x){
+    if(x.su){
+      var Q=grpQ(x.su.g,-1);
+      x.p=R(x.b+(Q?grpT(x.su.g,0,-1)*rate(x.su.pi,x.q)/Q:0));
+    }
+  });
+}
 function faixa(j){return D.qs[j].toLocaleString("pt-BR")+(j<D.qs.length-1?" a "+(D.qs[j+1]-1).toLocaleString("pt-BR"):" ou mais");}
-function limpaPreco(msg){["pp","tot","fx","vparc","vav1","vav2"].forEach(function(x){$(x).textContent="-"});$("arg").textContent="";$("sit").innerHTML="<div class='bad'>"+msg+"</div>";cur=null;}
-function calc(){if(!D.p.length){limpaPreco("Tabela de preços ainda não carregada. Peça ao administrador para importar.");return;}var t=$("tipo").value;
-document.querySelectorAll(".ap").forEach(function(e){e.classList.toggle("hide",t===""||t==="Nenhuma")});
-document.querySelectorAll(".silk").forEach(function(e){e.classList.toggle("hide",t!=="Silk")});
-document.querySelectorAll(".bord").forEach(function(e){e.classList.toggle("hide",t!=="Bordado")});
-marca();
-if(falta()>0){limpaPreco("Preencha os campos em amarelo");$("tb").innerHTML="<tr><td colspan='4'>Escolha o produto e a aplicação para ver a tabela.</td></tr>";return;}
-var arr=D.p[$("prod").value][key()],q=parseInt($("qtd").value)||0,i=idx(q);
-var f=[1,1-D.avista,1-D.t3][tab],h="";
-if(i<0&&q>0){var u0=pr(arr,q);h+="<tr class='sel'><td>"+q.toLocaleString("pt-BR")+" peça(s) (abaixo da 1ª faixa)</td><td>"+brl(u0*f)+"</td><td>"+brl(u0*f*q)+"</td><td>"+pc(u0/arr[0]-1)+"</td></tr>";}D.qs.forEach(function(b,j){var sl=(j===i&&q>0),u=sl?pr(arr,q):arr[j],n=sl?q:b;h+="<tr"+(sl?" class='sel'":"")+"><td>"+(sl?q.toLocaleString("pt-BR")+" peças (faixa "+faixa(j)+")":faixa(j))+"</td><td>"+brl(u*f)+"</td><td>"+brl(u*f*n)+"</td><td>"+((j||sl)&&u!==arr[0]?pc(u/arr[0]-1):"-")+"</td></tr>"});
-$("tb").innerHTML=h;
-if(q<=0){limpaPreco("Informe a quantidade");return;}
-$("sit").innerHTML="";
-var p=pr(arr,q);var fv={};["prod","qtd","tipo","pos","cor","esc","tela","mat"].forEach(function(id){fv[id]=$(id).value});cur={n:$("prod").selectedOptions[0].text,ap:apTxt(),q:q,p:p,f:fv};
-$("pp").textContent=brl(p);$("tot").textContent=brl(p*q);$("fx").textContent=i<0?"Abaixo de "+D.qs[0]+" peças (set-up integral)":faixa(i)+" peças";
-$("vparc").textContent=brl(p*q);$("vav1").textContent=brl(p*(1-D.avista));$("vav2").textContent=brl(p*(1-D.avista)*q);
-$("arg").textContent=i<D.qs.length-1?"💡 Se o cliente fechar "+D.qs[i+1].toLocaleString("pt-BR")+" peças, o preço cai para "+brl(arr[i+1])+" por peça ("+pc(arr[i+1]/p-1)+").":"💡 Quantidade já está na maior faixa de volume.";}
+function limpaPreco(msg){
+  ["pp","tot","fx","vparc","vav1","vav2"].forEach(function(x){$(x).textContent="-";});
+  $("arg").textContent="";$("sit").innerHTML="<div class='bad'>"+msg+"</div>";cur=null;
+}
+function calc(){
+  if(!D.p.length){limpaPreco("Tabela de preços ainda não carregada. Solicite ao administrador a importação.");return;}
+  var t=$("tipo").value;
+  document.querySelectorAll(".ap").forEach(function(e){e.classList.toggle("hide",t===""||t==="Nenhuma");});
+  document.querySelectorAll(".silk").forEach(function(e){e.classList.toggle("hide",t!=="Silk");});
+  document.querySelectorAll(".bord").forEach(function(e){e.classList.toggle("hide",t!=="Bordado");});
+  document.querySelectorAll(".arte").forEach(function(e){e.classList.toggle("hide",!tKey());});
+  marca();
+  if(falta()>0){limpaPreco("Preencha os campos em amarelo");$("tb").innerHTML="<tr><td colspan='4'>Escolha produto e aplicação para ver a tabela.</td></tr>";return;}
+  var arr=apArr(),q=parseInt($("qtd").value,10)||0,i=idx(q);
+  if(!arr){limpaPreco("Esta combinação não está disponível na tabela do modelo. Avise o administrador.");return;}
+  var su=suInfo(),Qo=su?grpQ(su.g,-1):0,Tg=su?grpT(su.g,su.T,-1):0;
+  var sh=function(n){return su&&n>0?Tg*rate(su.pi,n)/(Qo+n):0};
+  var f=[1,1-D.avista,1-D.t3][tab],h="",a0=arr[0]+adB(D.qs[0])+sh(D.qs[0]);
+  if(i<0&&q>0){
+    var u0=R(prB(arr,q)+sh(q));
+    h+="<tr class='sel'><td>"+q.toLocaleString("pt-BR")+" peça(s) (abaixo da 1ª faixa)</td><td>"+brl(u0*f)+"</td><td>"+brl(u0*f*q)+"</td><td>"+pc(u0/a0-1)+"</td></tr>";
+  }
+  D.qs.forEach(function(b,j){
+    var sl=(j===i&&q>0),u=sl?R(prB(arr,q)+sh(q)):R(arr[j]+adB(b)+sh(b)),n=sl?q:b;
+    h+="<tr"+(sl?" class='sel'":"")+"><td>"+(sl?q.toLocaleString("pt-BR")+" peças (faixa "+faixa(j)+")":faixa(j))+"</td><td>"+brl(u*f)+"</td><td>"+brl(u*f*n)+"</td><td>"+((j||sl)&&u!==a0?pc(u/a0-1):"-")+"</td></tr>";
+  });
+  $("tb").innerHTML=h;
+  if(q<=0){limpaPreco("Informe a quantidade");return;}
+  $("sit").innerHTML="";
+  var b0=prB(arr,q),p=R(b0+sh(q)),fv={};
+  ["prod","qtd","tipo","pos","cor","esc","tela","mat","band","arte"].forEach(function(id){fv[id]=$(id).value;});
+  cur={n:$("prod").selectedOptions[0].text,ap:apTxt(),q:q,p:p,f:fv,b:b0,su:su};
+  if(su)$("sit").innerHTML="<div class='tip'>🎨 "+($("tipo").value==="Silk"?"Tela":"Matriz")+" nova da "+su.a+" ("+brl(Tg)+" de custo) dividida entre "+(Qo+q).toLocaleString("pt-BR")+" peças do orçamento.</div>";
+  $("pp").textContent=brl(p);$("tot").textContent=brl(p*q);$("fx").textContent=i<0?"Abaixo de "+D.qs[0]+" peças (set-up integral)":faixa(i)+" peças";
+  $("vparc").textContent=brl(p*q);$("vav1").textContent=brl(p*(1-D.avista));$("vav2").textContent=brl(p*(1-D.avista)*q);
+  $("arg").textContent=i<D.qs.length-1?"💡 Com "+D.qs[i+1].toLocaleString("pt-BR")+" peças, preço sugerido "+brl(R(arr[i+1]+adB(D.qs[i+1])+sh(D.qs[i+1])))+" por peça.":"💡 Quantidade já está na maior faixa de volume.";
+}
 function total(){var s=0;IT.forEach(function(x){s+=x.p*x.q});return s;}
-function lista(){var h="";IT.forEach(function(x,k){h+="<tr"+(x.f?" class='clk' title='Clique para ver a tabela de preços deste item' onclick='ver("+k+")'":"")+"><td>"+(k+1)+"</td><td class='l'>"+x.n+"</td><td class='l'>"+x.ap+"</td><td>"+x.q.toLocaleString("pt-BR")+"</td><td>"+brl(x.p)+"</td><td>"+brl(x.p*x.q)+"</td><td><button class='del' title='Remover' onclick='event.stopPropagation();rm("+k+")'>❌</button></td></tr>"});
+function lista(){reprice();var h="";IT.forEach(function(x,k){h+="<tr"+(x.f?" class='clk' title='Clique para ver a tabela de preços deste item' onclick='ver("+k+")'":"")+"><td>"+(k+1)+"</td><td class='l'>"+x.n+"</td><td class='l'>"+x.ap+"</td><td>"+x.q.toLocaleString("pt-BR")+"</td><td>"+brl(x.p)+"</td><td>"+brl(x.p*x.q)+"</td><td><button class='del' title='Remover' onclick='event.stopPropagation();rm("+k+")'>❌</button></td></tr>"});
 if(!IT.length)h="<tr><td colspan='7'>Nenhum produto adicionado ainda. Preencha acima e clique em ➕ Adicionar.</td></tr>";
 $("itb").innerHTML=h;var s=total();$("gt").textContent=brl(s);$("gp").textContent=brl(s);$("ga").textContent=brl(s*(1-D.avista));}
-function rm(k){IT.splice(k,1);salva();lista();}function ver(k){var x=IT[k];if(!x||!x.f)return;["prod","qtd","tipo","pos","cor","esc","tela","mat"].forEach(function(id){$(id).value=x.f[id]||""});calc();$("sit").innerHTML="<div class='tip'>Mostrando o item "+(k+1)+" do orçamento. Ele já está na lista – só clique em ➕ Adicionar se quiser incluir outro igual.</div>";$("tb").scrollIntoView({behavior:"smooth",block:"center"});}
+function rm(k){IT.splice(k,1);reprice();salva();lista();}function ver(k){var x=IT[k];if(!x||!x.f)return;["prod","qtd","tipo","pos","cor","esc","tela","mat","band","arte"].forEach(function(id){$(id).value=x.f[id]||""});calc();$("sit").innerHTML="<div class='tip'>Mostrando o item "+(k+1)+" do orçamento. Ele já está na lista – só clique em ➕ Adicionar se quiser incluir outro igual.</div>";$("tb").scrollIntoView({behavior:"smooth",block:"center"});}
 $("add").onclick=function(){if(!cur){alert("Preencha todos os campos em amarelo antes de adicionar.");return;}
-IT.push(cur);salva();lista();["prod","qtd","tipo","pos","cor","esc","tela","mat"].forEach(function(x){$(x).value=""});calc();$("itens").scrollIntoView({behavior:"smooth"});};
+IT.push(cur);reprice();salva();lista();["prod","qtd","tipo","pos","cor","esc","tela","mat","band","arte"].forEach(function(x){$(x).value=""});$("band").value="0";calc();$("itens").scrollIntoView({behavior:"smooth"});};
 $("limpa").onclick=function(){if(IT.length&&confirm("Apagar todos os itens deste orçamento?")){IT=[];salva();lista();}};
 document.querySelectorAll("input,select").forEach(function(e){e.addEventListener("input",calc);e.addEventListener("change",calc)});
 document.querySelectorAll(".tabs button").forEach(function(b){b.onclick=function(){tab=+b.dataset.t;document.querySelectorAll(".tabs button").forEach(function(x){x.classList.toggle("on",x===b)});calc();}});
@@ -359,13 +441,33 @@ lista();calc();
       var pricing=data.pricing;
       if(!pricing||!Array.isArray(pricing.produtos)||!Array.isArray(pricing.p)||
          pricing.produtos.length!==pricing.p.length||!pricing.produtos.length)return;
+      var wasV3=v3();
+      D.pricingEngine=pricing.pricingEngine==="shared-setup-v3"?"shared-setup-v3":"legacy-v2";
+      D.band=pricing.band||{lim:40,a:0,b:0};
+      D.tc=pricing.tc||{};
+      D.r=Array.isArray(pricing.r)?pricing.r:[];
+      D.dv=Array.isArray(pricing.dv)?pricing.dv:[];
+      document.querySelectorAll(".v3only").forEach(function(el){el.classList.toggle("hide",!v3());});
+      if(wasV3!==v3()){IT=[];salva();lista();}
+      function fillOptions(id,max){
+        var select=$(id),selected=select.value;
+        select.length=1;
+        for(var i=1;i<=max;i++)select.add(new Option(String(i),String(i)));
+        if(selected&&Number(selected)<=max)select.value=selected;
+      }
+      fillOptions("pos",v3()?6:3);
+      fillOptions("cor",v3()?8:4);
+      $("bandtip").textContent=v3()?" Bandeira do Brasil: + "+brl(D.band.a)+" por peça até "+D.band.lim+" peças; acima disso + "+brl(D.band.b)+".":"";
       D.qs=pricing.qs;
       D.avista=pricing.avista;
       D.t3=pricing.t3;
       D.parc=pricing.parc;
       D.gerado=pricing.gerado||D.gerado;
       D.produtos=pricing.produtos;
-      D.p=pricing.p.map(function(o){var converted={};Object.keys(o).forEach(function(k){converted[k]=o[k].map(function(cents){return Number(cents)/100;});});return converted;});
+      D.p=pricing.p.map(function(o,pi){var converted={};Object.keys(o).forEach(function(k){
+        var values=o[k].map(function(cents){return Number(cents)/100;});
+        values.r=v3()?(D.r[pi]||1):1;converted[k]=values;
+      });return converted;});
       D.productMeta=Array.isArray(pricing.productMeta)?pricing.productMeta:[];
       if(Number.isInteger(Number(pricing.deliveryDays))&&Number(pricing.deliveryDays)>0)PRAZO=Number(pricing.deliveryDays);
       if(Number.isInteger(Number(pricing.validDays))&&Number(pricing.validDays)>0)VALID=Number(pricing.validDays);
