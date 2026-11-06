@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { loadPricingCatalog, toCalculatorPricing } from '../lib/pricingCatalog';
 import MartinpelBrand from '../components/MartinpelBrand';
 import { readPieceCart } from '../lib/multiPieceCart';
 import { readSimulatorQuoteDraft, saveSimulatorQuoteDraft } from '../lib/simulatorQuoteDraft';
@@ -32,10 +31,6 @@ export default function QuoteSimulatorPage({ user, profile, isAdmin = false, log
   const frameRef = useRef(null);
   const [cart] = useState(() => readPieceCart(user?.uid));
   const [received, setReceived] = useState(null);
-  const [pricing, setPricing] = useState(null);
-  const [pricingBusy, setPricingBusy] = useState(true);
-  const [pricingError, setPricingError] = useState('');
-  const [catalogSummary, setCatalogSummary] = useState(null);
   const [frameHeight, setFrameHeight] = useState(1550);
   const [frameReady, setFrameReady] = useState(false);
   const [mapping, setMapping] = useState({});
@@ -43,65 +38,63 @@ export default function QuoteSimulatorPage({ user, profile, isAdmin = false, log
   const [error, setError] = useState('');
   const savedQuote = readSimulatorQuoteDraft(user?.uid, cart);
 
-  useEffect(() => {
-    let live = true;
-    loadPricingCatalog()
-      .then(({config, products, configured}) => {
-        if (!live) return;
-        const table = toCalculatorPricing(config, products);
-        setCatalogSummary({ count: products.length, active: table.produtos.length });
-        if (!configured) setPricingError('O administrador ainda não importou ou cadastrou a tabela de preços.');
-        else if (!table.produtos.length) setPricingError('Nenhuma peça ativa disponível. Solicite ao administrador que revise os modelos.');
-        setPricing(table);
-      })
-      .catch((err) => { if (live) setPricingError(`Não foi possível consultar o catálogo privado: ${err.message}. Verifique as regras do Firestore.`); })
-      .finally(() => { if (live) setPricingBusy(false); });
-    return () => { live = false; };
-  }, []);
+  // O arquivo HTML da equipe é carregado sem qualquer alteração.
+  // A integração com o carrinho ocorre apenas nesta página externa ao HTML.
+  function handleFrameLoad() {
+    const doc = frameRef.current?.contentDocument;
+    if (!doc?.body) return;
+    const height = Math.ceil(Math.max(doc.body.scrollHeight, doc.documentElement.scrollHeight)) + 12;
+    if (Number.isFinite(height) && height >= 550 && height <= 18000) setFrameHeight(height);
+    setFrameReady(true);
+  }
 
   useEffect(() => {
-    if (!pricing || !frameReady || !frameRef.current?.contentWindow) return;
-    frameRef.current.contentWindow.postMessage({ type: 'koleni:simulator:pricing', pricing }, window.location.origin);
-    frameRef.current.contentWindow.postMessage({
-      type: 'koleni:simulator:prefill',
-      seller: profile?.name || user?.displayName || user?.email || '',
-      garmentName: cart.length === 1 ? cart[0].garmentName : '',
-      quantity: cart.length === 1 ? cart[0].quantity : '',
-    }, window.location.origin);
-  }, [pricing, frameReady, profile?.name, user?.displayName, user?.email, cart]);
+    if (!frameReady || typeof ResizeObserver === 'undefined') return undefined;
+    const doc = frameRef.current?.contentDocument;
+    if (!doc?.body) return undefined;
+    const observer = new ResizeObserver(() => {
+      const height = Math.ceil(Math.max(doc.body.scrollHeight, doc.documentElement.scrollHeight)) + 12;
+      if (Number.isFinite(height) && height >= 550 && height <= 18000) setFrameHeight(height);
+    });
+    observer.observe(doc.body);
+    return () => observer.disconnect();
+  }, [frameReady]);
 
-  useEffect(() => {
-    function onFrameMessage(event) {
-      if (event.origin !== window.location.origin || event.source !== frameRef.current?.contentWindow) return;
-      const payload = event.data;
-      if (!payload || payload.version !== 1) return;
-      if (payload.type === 'koleni:simulator:height') {
-        const height = Number(payload.height);
-        if (Number.isFinite(height) && height >= 550 && height <= 12000) setFrameHeight(height);
-        return;
+  function receiveOriginalQuote() {
+    setError('');
+    try {
+      const simulator = frameRef.current?.contentWindow;
+      const originalItems = simulator?.IT;
+      if (!Array.isArray(originalItems)) throw new Error('O HTML original ainda não terminou de carregar.');
+      if (!originalItems.length) throw new Error('Adicione os produtos ao orçamento no simulador acima antes de transferir os preços.');
+      if (originalItems.length > 20) throw new Error('O pedido aceita até 20 produtos por vez.');
+      const items = originalItems.map((item) => ({
+        name: String(item.n || '').trim(),
+        quantity: Number(item.q),
+        unitPrice: Number(item.p),
+        application: String(item.ap || 'Sem aplicação'),
+      }));
+      if (items.some((item) => !item.name || !Number.isInteger(item.quantity) || item.quantity <= 0 ||
+        !Number.isFinite(item.unitPrice) || item.unitPrice <= 0)) {
+        throw new Error('Há itens sem nome, quantidade ou preço válido no simulador original.');
       }
-      if (payload.type === 'koleni:simulator:ready') {
-        setFrameReady(true);
-      }
-      if (payload.type === 'koleni:simulator:quote') {
-        const filtered = Array.isArray(payload.items) ? payload.items.filter((item) =>
-          Number.isFinite(Number(item.unitPrice)) && Number(item.unitPrice) > 0 &&
-          Number.isInteger(Number(item.quantity)) && Number(item.quantity) > 0,
-        ).slice(0, 20) : [];
-        if (!filtered.length) {
-          setError('Nenhum item válido foi recebido do simulador.');
-          return;
-        }
-        setReceived({ ...payload, items: filtered });
-        setMapping(automaticMatching(cart, filtered));
-        setMessage('Preços recebidos. Confira a correspondência entre os produtos da tabela e as peças personalizadas.');
-        setError('');
-        document.querySelector('#simulador-conferencia')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
+      const originalSettings = simulator.D || {};
+      const total = round(items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0));
+      setReceived({
+        items,
+        total,
+        installments: Number(originalSettings.parc) || 3,
+        cashDiscount: Number(originalSettings.avista) || 0,
+        deliveryDays: Number(simulator.PRAZO) || 30,
+        generatedAt: String(originalSettings.gerado || ''),
+      });
+      setMapping(automaticMatching(cart, items));
+      setMessage('Preços lidos diretamente do HTML recebido, sem alterar seus cálculos. Confira a correspondência com cada peça do pedido.');
+      requestAnimationFrame(() => document.querySelector('#simulador-conferencia')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+    } catch (err) {
+      setError(err.message || 'Não foi possível ler os itens do simulador original.');
     }
-    window.addEventListener('message', onFrameMessage);
-    return () => window.removeEventListener('message', onFrameMessage);
-  }, [cart, user?.uid, user?.email, user?.displayName, profile?.name]);
+  }
 
   function applyToCart() {
     setError('');
@@ -133,8 +126,8 @@ export default function QuoteSimulatorPage({ user, profile, isAdmin = false, log
       total,
       estimatedTime: `${received.deliveryDays || 30} dias (estimativa)`,
       notes: terms,
-      simulatorSource: pricing?.gerado ? `tabela-koleni-${pricing.gerado}` : 'tabela-koleni',
-      pricingEngine: pricing?.pricingEngine || 'legacy-v2',
+      simulatorSource: received.generatedAt ? `html-original-koleni-${received.generatedAt}` : 'html-original-koleni',
+      pricingEngine: 'original-html',
     };
     try {
       saveSimulatorQuoteDraft(user.uid, cart, quote);
@@ -168,16 +161,14 @@ export default function QuoteSimulatorPage({ user, profile, isAdmin = false, log
     </section>
     <section className="simulator-private panel">
       <div>
-        <strong>Catálogo de preços conectado</strong>
-        <p>{pricingBusy ? 'Carregando valores privados do Firebase…' : catalogSummary ? `${catalogSummary.active} modelos ativos de ${catalogSummary.count} cadastrados. Tabela de preços acessível apenas à equipe autenticada.` : 'Tabela indisponível.'}</p>
+        <strong>Calculadora original da Koleni</strong>
+        <p>Os produtos, preços, descontos e cálculos são exatamente os do HTML enviado pela equipe. As alterações feitas no cadastro de preços do Firebase não substituem os valores deste arquivo.</p>
       </div>
-      {isAdmin && <Link className="button button-secondary" to="/admin/simulador">Administrar catálogo e preços</Link>}
-      {pricingError && <p className="simulator-import-error">{pricingError}</p>}
-      {!pricing && !isAdmin && <small>Peça ao administrador para cadastrar os modelos e publicar as regras do Firebase.</small>}
+      {isAdmin && <Link className="button button-secondary" to="/admin/simulador">Área administrativa de preços</Link>}
     </section>
     {cart.length > 0 && <section className="simulator-cart panel">
       <h2>Peças que você já personalizou</h2>
-      <p>Inclua no simulador um produto correspondente para cada peça abaixo, com a mesma quantidade. Depois clique em <strong>Enviar preços simulados ao pedido Koleni</strong>, dentro do simulador.</p>
+      <p>Inclua no simulador um produto correspondente para cada peça abaixo, com a mesma quantidade. Depois de adicionar os produtos no HTML, use <strong>Conferir preços do HTML no pedido</strong>, abaixo do simulador.</p>
       <div className="simulator-pieces">
         {cart.map((item, index) => <div className="simulator-piece" key={item.id || index}>
           {item.finalImageUrl && <img src={item.finalImageUrl} alt="Arte personalizada" />}
@@ -194,9 +185,18 @@ export default function QuoteSimulatorPage({ user, profile, isAdmin = false, log
         title="Calculadora original de preços Koleni"
         allow="clipboard-write"
         loading="eager"
+        onLoad={handleFrameLoad}
         style={{ height: `${frameHeight}px` }}
       />
     </section>
+    {cart.length > 0 && <section className="simulator-private panel">
+      <div>
+        <strong>Aplicar o orçamento original ao pedido</strong>
+        <p>Quando terminar o orçamento no HTML acima, confira os valores antes de vinculá-los às peças personalizadas.</p>
+        {error && <div className="notice notice-error">{error}</div>}
+      </div>
+      <button className="button button-primary" type="button" onClick={receiveOriginalQuote}>Conferir preços do HTML no pedido</button>
+    </section>}
     {received && <section id="simulador-conferencia" className="simulator-review panel">
       <h2>Conferência dos preços calculados</h2>
       <p>{message}</p>
